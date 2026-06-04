@@ -1,0 +1,66 @@
+package com.buddi.api.room.service;
+
+import com.buddi.api.room.dto.RoomMemberResponse;
+import com.buddi.api.room.dto.RoomResponse;
+import com.buddi.api.room.entity.Room;
+import com.buddi.api.room.repository.RoomRepository;
+import com.buddi.api.shareditem.repository.SharedItemRepository;
+import com.buddi.api.user.service.UserQueryService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class RoomQueryService {
+
+    private final RoomRepository roomRepository;
+    private final UserQueryService userQueryService;
+    private final SharedItemRepository sharedItemRepository;
+
+    @Transactional(readOnly = true)
+    public List<RoomResponse> getMyRooms(Long userId) {
+        return roomRepository.findByUserId(userId)
+                .stream()
+                .map(room -> {
+                    LocalDateTime since = room.getLastReadAt(userId).orElse(LocalDateTime.of(2000, 1, 1, 0, 0, 0));
+                    int unread = (int) sharedItemRepository.countUnreadSharedItems(room.getId(), userId, since);
+                    return new RoomResponse(room, unread);
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> getRoomMemberIds(Long roomId, Long excludeUserId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return room.getMembers().stream()
+                .map(m -> m.getUserId())
+                .filter(id -> !id.equals(excludeUserId))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RoomMemberResponse> getMembers(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        List<Long> userIds = room.getMembers().stream().map(m -> m.getUserId()).toList();
+        return userQueryService.findAllByIds(userIds).stream()
+                .map(u -> new RoomMemberResponse(u.getId(), u.getNickname()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public void validateMember(Long roomId, Long userId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "방이 존재하지 않습니다"));
+        if (!room.hasMember(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "방 멤버가 아닙니다");
+        }
+    }
+}

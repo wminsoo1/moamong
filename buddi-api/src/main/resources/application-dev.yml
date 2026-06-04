@@ -1,0 +1,23 @@
+spring:
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  datasource:
+    url: jdbc:mysql://localhost:3307/buddi?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    username: root
+    password: buddi1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ea982c57d45561b4469c1919b41aad14
+            client-secret: WpauVq3yjDCZNP31UoNFiofzl8p3GyHb
+            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+
+oauth2:
+  redirect-uri: http://localhost:5173/callback

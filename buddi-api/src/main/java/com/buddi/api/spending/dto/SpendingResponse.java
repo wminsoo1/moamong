@@ -1,0 +1,31 @@
+package com.buddi.api.spending.dto;
+
+import com.buddi.api.spending.entity.Spending;
+import com.buddi.api.user.entity.CategoryGroupMeta;
+import lombok.Getter;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Getter
+public class SpendingResponse {
+    private final Long id;
+    private final String type;
+    private final String categoryName;
+    private final String categoryGroup;
+    private final String categoryGroupLabel;
+    private final Long amount;
+    private final LocalDate date;
+    private final LocalDateTime createdAt;
+
+    public SpendingResponse(Spending spending) {
+        this.id = spending.getId();
+        this.type = spending.getType().name();
+        this.categoryName = spending.getCategoryName();
+        this.categoryGroup = spending.getCategoryGroup();
+        this.categoryGroupLabel = CategoryGroupMeta.labelOf(spending.getCategoryGroup());
+        this.amount = spending.getAmount();
+        this.date = spending.getDate();
+        this.createdAt = spending.getCreatedAt();
+    }
+}
