@@ -38,5 +38,5 @@ variable "s3_bucket_name" {
 
 variable "github_repo" {
   description = "GitHub 레포 (org/repo 형식)"
-  default     = "wjunseok/moamong"
+  default     = "wminsoo1/moamong"
 }
