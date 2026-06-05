@@ -17,11 +17,14 @@ locals {
       yum install -y java-17-amazon-corretto
     fi
 
-    # 3. S3에서 jar 다운로드
+    # 3. S3에서 jar 및 환경변수 파일 다운로드
     mkdir -p /app
     aws s3 cp s3://${var.s3_bucket_name}/app.jar /app/app.jar
+    aws s3 cp s3://${var.s3_bucket_name}/app.env /app/app.env
+    chmod 600 /app/app.env
 
     # 4. Spring Boot 실행
+    set -a && source /app/app.env && set +a
     nohup java -jar /app/app.jar \
       --spring.profiles.active=prod \
       > /app/app.log 2>&1 &
