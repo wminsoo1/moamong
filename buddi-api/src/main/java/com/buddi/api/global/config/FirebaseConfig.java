@@ -6,6 +6,8 @@ import com.google.firebase.FirebaseOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 
@@ -17,9 +19,11 @@ public class FirebaseConfig {
         if (!FirebaseApp.getApps().isEmpty()) {
             return FirebaseApp.getInstance();
         }
-        GoogleCredentials credentials = GoogleCredentials.fromStream(
-                new ClassPathResource("firebase-service-account.json").getInputStream()
-        );
+        String credentialsPath = System.getenv("FIREBASE_CREDENTIALS_PATH");
+        Resource resource = (credentialsPath != null && !credentialsPath.isBlank())
+                ? new FileSystemResource(credentialsPath)
+                : new ClassPathResource("firebase-service-account.json");
+        GoogleCredentials credentials = GoogleCredentials.fromStream(resource.getInputStream());
         FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(credentials)
                 .build();
