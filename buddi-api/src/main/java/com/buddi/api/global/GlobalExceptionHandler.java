@@ -34,7 +34,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, String>> handleNotReadable(HttpMessageNotReadableException e) {
-        return ResponseEntity.badRequest().body(Map.of("message", "날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)"));
+        String message = e.getMessage() != null && e.getMessage().contains("LocalDate")
+                ? "날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)"
+                : "요청 형식이 올바르지 않습니다.";
+        return ResponseEntity.badRequest().body(Map.of("message", message));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
