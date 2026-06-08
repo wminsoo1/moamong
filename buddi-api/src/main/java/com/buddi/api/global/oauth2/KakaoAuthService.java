@@ -1,5 +1,6 @@
 package com.buddi.api.global.oauth2;
 
+import com.buddi.api.room.entity.Room;
 import com.buddi.api.room.entity.RoomMemberRole;
 import com.buddi.api.room.repository.RoomRepository;
 import com.buddi.api.user.entity.User;
@@ -50,10 +51,10 @@ public class KakaoAuthService {
             User newUser = User.createWithDefaults(PROVIDER, providerId, nickname);
             newUser.initDefaults();
             userRepository.save(newUser);
-            roomRepository.findFirstByIsSystemTrue().ifPresent(room -> {
-                room.addMember(newUser.getId(), RoomMemberRole.MEMBER);
-                newUser.updateShareRoomIds(List.of(room.getId()));
-            });
+            Room systemRoom = roomRepository.findFirstByIsSystemTrue()
+                    .orElseGet(() -> roomRepository.save(Room.createSystem("전체 공유방")));
+            systemRoom.addMember(newUser.getId(), RoomMemberRole.MEMBER);
+            newUser.updateShareRoomIds(List.of(systemRoom.getId()));
             return newUser;
         });
 
