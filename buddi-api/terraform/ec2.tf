@@ -73,6 +73,14 @@ systemctl restart nginx
 mkdir -p /etc/cron.d
 echo "0 3 * * * root certbot renew --quiet && systemctl reload nginx" > /etc/cron.d/certbot-renew
 
+# 9. CloudWatch Agent 설치 및 설정
+yum install -y amazon-cloudwatch-agent
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config \
+  -m ec2 \
+  -s \
+  -c ssm:/moamong/cloudwatch-agent-config
+
 echo "배포 완료: $(date)"
 EOF
 }

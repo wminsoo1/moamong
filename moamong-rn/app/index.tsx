@@ -3,16 +3,20 @@ import { Redirect } from "expo-router";
 import { View, ActivityIndicator } from "react-native";
 import { apiClient, clearSessionId } from "@/src/lib/api";
 
+type Destination = "/(tabs)/calendar" | "/(auth)/login" | "/(auth)/onboarding";
+
 export default function Index() {
   const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
+  const [destination, setDestination] = useState<Destination>("/(auth)/login");
 
   useEffect(() => {
-    apiClient("/api/users/me")
-      .then(() => setAuthenticated(true))
+    apiClient<{ username: string | null }>("/api/users/me")
+      .then((user) => {
+        setDestination(user.username ? "/(tabs)/calendar" : "/(auth)/onboarding");
+      })
       .catch(async () => {
         await clearSessionId();
-        setAuthenticated(false);
+        setDestination("/(auth)/login");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -25,5 +29,5 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={authenticated ? "/(tabs)/calendar" : "/(auth)/login"} />;
+  return <Redirect href={destination} />;
 }
