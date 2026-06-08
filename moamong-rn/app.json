@@ -10,10 +10,17 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.moamong.app",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        }
+          "NSExceptionDomains": {
+            "localhost": {
+              "NSExceptionAllowsInsecureHTTPLoads": true
+            }
+          }
+        },
+        "NSPhotoLibraryUsageDescription": "지출 내역에 사진을 첨부해 가계부를 기록하기 위해 사용합니다.",
+        "CFBundleLocalizations": ["ko", "en"]
       }
     },
     "notification": {
@@ -34,6 +41,7 @@
       "expo-router",
       "expo-status-bar",
       "expo-web-browser",
+      "expo-apple-authentication",
       [
         "expo-notifications",
         {

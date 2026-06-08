@@ -7,8 +7,8 @@ export interface Spending {
   amount: number;
   date: string;
   memo: string | null;
+  imageUrl: string | null;
   createdAt: string;
-  shared: boolean;
 }
 
 export interface WeekEntry {
@@ -53,11 +53,12 @@ export interface ChartWeekItem {
 
 export interface SpendingInput {
   type: "EXPENSE" | "INCOME";
-  categoryId?: number | null;      // 소카테고리 선택 시
-  categoryGroupKey?: string | null; // 소카테고리 미선택 시 대카테고리 key
+  categoryId?: number | null;
+  categoryGroupKey?: string | null;
   amount: number;
   date: string;
   memo: string | null;
+  imageUrl?: string | null;
 }
 
 export interface RecurringSpending {

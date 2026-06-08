@@ -1,12 +1,10 @@
 import { View, Text, Image, Pressable, StyleSheet, Platform, ActivityIndicator, Alert, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as WebBrowser from "expo-web-browser";
+import { login as kakaoLogin } from "@react-native-seoul/kakao-login";
+import { signInAsync, AppleAuthenticationScope, AppleAuthenticationButton, AppleAuthenticationButtonType, AppleAuthenticationButtonStyle } from "expo-apple-authentication";
 import { router } from "expo-router";
 import { setSessionId, apiClient } from "@/src/lib/api";
 import { useState } from "react";
-
-const DEFAULT_URL = Platform.OS === "android" ? "http://10.0.2.2:8080" : "http://localhost:8080";
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? DEFAULT_URL;
 
 const DEBUG_USERS = [
   { username: "testfriend", label: "테스트친구" },
@@ -20,23 +18,47 @@ export default function LoginScreen() {
   const handleKakaoLogin = async () => {
     setLoading(true);
     try {
-      const result = await WebBrowser.openAuthSessionAsync(
-        `${BASE_URL}/oauth2/authorization/kakao`,
-        "moamong://callback"
-      );
-
-      if (result.type === "success") {
-        const url = new URL(result.url);
-        const sessionId = url.searchParams.get("sessionId");
-        const newUser = url.searchParams.get("newUser");
-
-        if (sessionId) {
-          await setSessionId(sessionId);
-          router.replace(newUser === "true" ? "/(auth)/onboarding" : "/(tabs)/calendar");
-        }
+      const token = await kakaoLogin();
+      const data = await apiClient<{ sessionId: string; newUser: boolean }>("/api/auth/kakao", {
+        method: "POST",
+        body: JSON.stringify({ accessToken: token.accessToken }),
+      });
+      await setSessionId(data.sessionId);
+      router.replace(data.newUser ? "/(auth)/onboarding" : "/(tabs)/calendar");
+    } catch (e: any) {
+      if (e.code !== "E_CANCELLED") {
+        Alert.alert("로그인 실패", "카카오 로그인 중 오류가 발생했습니다.");
       }
-    } catch (e) {
-      Alert.alert("로그인 실패", "카카오 로그인 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setLoading(true);
+    try {
+      const credential = await signInAsync({
+        requestedScopes: [
+          AppleAuthenticationScope.FULL_NAME,
+          AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      const givenName = credential.fullName?.givenName ?? "";
+      const familyName = credential.fullName?.familyName ?? "";
+      const fullName = [givenName, familyName].filter(Boolean).join(" ") || null;
+
+      const data = await apiClient<{ sessionId: string; newUser: boolean }>("/api/auth/apple", {
+        method: "POST",
+        body: JSON.stringify({ identityToken: credential.identityToken, fullName }),
+      });
+
+      await setSessionId(data.sessionId);
+      router.replace(data.newUser ? "/(auth)/onboarding" : "/(tabs)/calendar");
+    } catch (e: any) {
+      if (e.code !== "ERR_REQUEST_CANCELED") {
+        Alert.alert("로그인 실패", "Apple 로그인 중 오류가 발생했습니다.");
+      }
     } finally {
       setLoading(false);
     }
@@ -82,6 +104,16 @@ export default function LoginScreen() {
             }
           </Pressable>
 
+          {Platform.OS === "ios" && (
+            <AppleAuthenticationButton
+              buttonType={AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={16}
+              style={styles.appleButton}
+              onPress={handleAppleLogin}
+            />
+          )}
+
           {__DEV__ && (
             <View style={styles.debugArea}>
               <View style={styles.dividerRow}>
@@ -121,6 +153,7 @@ const styles = StyleSheet.create({
   button: { height: 52, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   kakaoButton: { backgroundColor: "#FEE500" },
   kakaoText: { fontSize: 16, fontWeight: "700", color: "#191919" },
+  appleButton: { height: 52 },
 
   // Debug styles
   debugArea: { marginTop: 12, gap: 12 },

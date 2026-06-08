@@ -29,7 +29,6 @@ export function CalendarDayCell({ day, today, selectedDate, currentDate, spendin
   const incAmt = dayExp.filter((e) => e.type === "INCOME").reduce((s, e) => s + e.amount, 0)
     + dayRecurring.filter((r) => r.type === "INCOME").reduce((s, r) => s + r.amount, 0);
 
-  const isShared = dayExp.some((e) => e.shared);
   const isToday = isSameDay(day, today);
   const isSelected = isSameDay(day, selectedDate);
   const isCurrentMonth = isSameMonth(day, currentDate);
@@ -57,7 +56,7 @@ export function CalendarDayCell({ day, today, selectedDate, currentDate, spendin
         >
           {format(day, "d")}
         </Text>
-        {isShared && isCurrentMonth && <View style={styles.sharedDot} />}
+
       </View>
       {isCurrentMonth && (incAmt > 0 || expAmt > 0) && (
         <View style={styles.calAmtCol}>
@@ -100,15 +99,6 @@ const styles = StyleSheet.create({
   calDayCircleToday: { backgroundColor: "#3182f6" },
   calDayNum: { fontSize: 13, fontWeight: "700", color: "#4e5968" },
   calDayNumToday: { color: "#fff" },
-  sharedDot: {
-    position: "absolute",
-    top: -2,
-    right: -4,
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: "#f04452",
-  },
   calAmtCol: { alignItems: "center", marginTop: 2 },
   calIncomeAmt: { fontSize: 10, fontWeight: "800", color: "#3182f6" },
   calExpAmt: { fontSize: 10, fontWeight: "800", color: "#f04452" },

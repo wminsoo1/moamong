@@ -1,23 +1,23 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   View, Text, Pressable, TextInput, ScrollView,
-  StyleSheet, Switch, KeyboardAvoidingView, Platform,
+  StyleSheet, KeyboardAvoidingView, Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import { useRooms } from "@/src/features/room/queries/useRooms";
 import { useShareHotItem } from "@/src/features/feed/mutations/useShareHotItem";
 import { SYSTEM_CATEGORIES, SystemCategoryKey } from "@/src/features/feed/types";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
 import { LinkInput } from "@/src/components/LinkInput";
 import { useInitialShareUrl } from "@/src/features/feed/hooks/useInitialShareUrl";
+import { useShareSettings } from "@/src/features/user/queries/useShareSettings";
 
 type CategoryEnum = SystemCategoryKey;
 
 export default function ShareItemScreen() {
   const { shareUrl: initialUrl } = useLocalSearchParams<{ shareUrl?: string }>();
-  const { rooms } = useRooms();
+const { data: shareSettings } = useShareSettings();
   const shareHotItem = useShareHotItem();
 
   const resolvedInitialUrl = useInitialShareUrl(initialUrl);
@@ -25,8 +25,6 @@ export default function ShareItemScreen() {
   const [shareUrl, setShareUrl] = useState("");
   const [shareTitle, setShareTitle] = useState<string | null>(null);
   const [shareImageUrl, setShareImageUrl] = useState<string | null>(null);
-  const [shareRoomIds, setShareRoomIds] = useState<number[]>([]);
-  const [shareIsPublic, setShareIsPublic] = useState(false);
   const [shareCategory, setShareCategory] = useState<CategoryEnum>("ETC");
   const [shareAmount, setShareAmount] = useState("");
   const [shareReview, setShareReview] = useState("");
@@ -36,9 +34,7 @@ export default function ShareItemScreen() {
     [shareAmount]
   );
 
-  useEffect(() => {
-    setShareRoomIds(rooms.map((r) => r.id));
-  }, [rooms]);
+  const shareRoomIds = shareSettings?.roomIds ?? [];
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -105,48 +101,12 @@ export default function ShareItemScreen() {
             </View>
           </View>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionLabel}>공유 범위</Text>
-              <View style={styles.publicToggleRow}>
-                <Text style={styles.publicToggleLabel}>전체 공개</Text>
-                <Switch
-                  value={shareIsPublic}
-                  onValueChange={setShareIsPublic}
-                  trackColor={{ false: "#e5e8eb", true: "#3182f6" }}
-                  thumbColor="#fff"
-                  ios_backgroundColor="#e5e8eb"
-                />
-              </View>
-            </View>
-
-            {rooms.map((room) => {
-              const checked = shareIsPublic || shareRoomIds.includes(room.id);
-              return (
-                <Pressable
-                  key={room.id}
-                  onPress={() => !shareIsPublic && setShareRoomIds(p => p.includes(room.id) ? p.filter(id => id !== room.id) : [...p, room.id])}
-                  style={[styles.roomRow, shareIsPublic && { opacity: 0.35 }]}
-                >
-                  <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-                    {checked && <Text style={styles.checkmark}>✓</Text>}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.roomName}>{room.name}</Text>
-                    {room.isSystem && (
-                      <Text style={{ fontSize: 11, color: "#adb5bd", marginTop: 1 }}>모두가 볼 수 있는 기본 방</Text>
-                    )}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
       <View style={styles.footer}>
         <Pressable
-          disabled={!shareUrl || (!shareIsPublic && shareRoomIds.length === 0) || shareHotItem.isPending}
+          disabled={!shareUrl || shareHotItem.isPending}
           onPress={() =>
             shareHotItem.mutate(
               {
@@ -157,7 +117,7 @@ export default function ShareItemScreen() {
                 title: shareTitle ?? "",
                 imageUrl: shareImageUrl,
                 review: shareReview,
-                isPublic: shareIsPublic,
+                isPublic: false,
               },
               { onSuccess: () => router.back() }
             )
@@ -187,18 +147,10 @@ const styles = StyleSheet.create({
   unitText: { fontSize: 20, fontWeight: "600", color: "#8b95a1", marginLeft: 4 },
   textInput: { flex: 1, fontSize: 20, fontWeight: "600", color: "#191f28", paddingVertical: 0 },
   section: { marginBottom: 24 },
-  sectionHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   sectionLabel: { fontSize: 12, fontWeight: "700", color: "#adb5bd", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 },
-  publicToggleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  publicToggleLabel: { fontSize: 13, fontWeight: "600", color: "#4e5968" },
   catChips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   catChip: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, gap: 6 },
   catChipText: { fontSize: 14, fontWeight: "600" },
-  roomRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, backgroundColor: "#f9fafb", borderRadius: 12, marginBottom: 8 },
-  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: "#d1d6db", alignItems: "center", justifyContent: "center" },
-  checkboxChecked: { backgroundColor: "#3182f6", borderColor: "#3182f6" },
-  checkmark: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  roomName: { fontSize: 15, fontWeight: "600", color: "#4e5968" },
   footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20, borderTopWidth: 1, borderTopColor: "#f2f4f6" },
   primaryBtn: { height: 52, borderRadius: 16, backgroundColor: "#3182f6", alignItems: "center", justifyContent: "center" },
   primaryBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },

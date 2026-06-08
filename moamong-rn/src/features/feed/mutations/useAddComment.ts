@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/src/lib/api";
 import { feedKeys } from "../keys";
+import { toast } from "@/src/lib/toast";
 
 export function useAddComment() {
   const queryClient = useQueryClient();
@@ -15,5 +16,6 @@ export function useAddComment() {
       queryClient.invalidateQueries({ queryKey: feedKeys.comments(sharedItemId) });
       queryClient.invalidateQueries({ queryKey: feedKeys.all() });
     },
+    onError: (e: Error) => toast.show(e.message),
   });
 }

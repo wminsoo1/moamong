@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+import { Platform, Linking } from "react-native";
+import messaging from "@react-native-firebase/messaging";
 import { useRegisterPushToken } from "../mutations/useRegisterPushToken";
 
 Notifications.setNotificationHandler({
@@ -13,11 +14,41 @@ Notifications.setNotificationHandler({
   }),
 });
 
+function openNotificationUrl(url: string | undefined) {
+  if (url && url !== "/") {
+    Linking.openURL(url).catch(() => {});
+  }
+}
+
 export function usePushTokenRegister() {
   const registerPushToken = useRegisterPushToken();
 
   useEffect(() => {
     registerToken();
+
+    // 토큰이 갱신될 때마다 서버에 재등록
+    const unsubRefresh = messaging().onTokenRefresh((newToken) => {
+      registerPushToken.mutate(newToken, {
+        onError: (e) => console.warn("[FCM] 토큰 갱신 등록 실패", e),
+      });
+    });
+
+    // 앱이 백그라운드에 있을 때 알림 탭
+    const unsubOpen = messaging().onNotificationOpenedApp((remoteMessage) => {
+      openNotificationUrl(remoteMessage.data?.url as string | undefined);
+    });
+
+    // 앱이 완전히 종료된 상태에서 알림 탭으로 앱 시작
+    messaging().getInitialNotification().then((remoteMessage) => {
+      if (remoteMessage) {
+        openNotificationUrl(remoteMessage.data?.url as string | undefined);
+      }
+    });
+
+    return () => {
+      unsubRefresh();
+      unsubOpen();
+    };
   }, []);
 
   async function registerToken() {
@@ -39,14 +70,12 @@ export function usePushTokenRegister() {
 
       if (finalStatus !== "granted") return;
 
-      const tokenData = await Notifications.getDevicePushTokenAsync();
-      console.log("[FCM] token:", tokenData.data);
-      registerPushToken.mutate(tokenData.data, {
+      const fcmToken = await messaging().getToken();
+      registerPushToken.mutate(fcmToken, {
         onSuccess: () => console.log("[FCM] 토큰 등록 성공"),
         onError: (e) => console.warn("[FCM] 토큰 등록 실패", e),
       });
     } catch (e) {
-      // 시뮬레이터 또는 인타이틀먼트 미설정 환경에서는 무시
       console.log("[FCM] 토큰 획득 실패 (시뮬레이터)", e);
     }
   }

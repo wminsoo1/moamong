@@ -9,6 +9,7 @@ import { useUpdateSpending } from "@/src/features/spending/mutations/useUpdateSp
 import { useDeleteSpending } from "@/src/features/spending/mutations/useDeleteSpending";
 import { useSpendingFromCache } from "@/src/features/spending/queries/useSpendingFromCache";
 import { useUserCategories } from "@/src/features/user/queries/useUserCategories";
+import { useImageUpload } from "@/src/features/spending/hooks/useImageUpload";
 import { ExpenseFormFields } from "@/src/components/ExpenseFormFields";
 
 export default function EditExpenseScreen() {
@@ -28,6 +29,7 @@ export default function EditExpenseScreen() {
   );
 
   const { userCategories } = useUserCategories();
+  const { imageUri, imageUrl, uploading, pick, remove } = useImageUpload(initialExpense?.imageUrl);
 
   useEffect(() => {
     if (userCategories.length === 0 || !initialExpense) return;
@@ -41,16 +43,7 @@ export default function EditExpenseScreen() {
   const updateSpending = useUpdateSpending(Number(id));
   const deleteSpending = useDeleteSpending();
 
-  const canSubmit = expAmount !== "" && parseInt(expAmount, 10) > 0 && (expCategoryId !== null || expGroupKey !== null);
-
-  const spendingInput = () => ({
-    type: expType === "지출" ? "EXPENSE" as const : "INCOME" as const,
-    categoryId: expCategoryId ?? undefined,
-    categoryGroupKey: expCategoryId === null ? expGroupKey ?? undefined : undefined,
-    amount: parseInt(expAmount, 10),
-    date: format(selectedDate, "yyyy-MM-dd"),
-    memo: expMemo || null,
-  });
+  const canSubmit = expAmount !== "" && parseInt(expAmount, 10) > 0 && (expCategoryId !== null || expGroupKey !== null) && !uploading;
 
   const mutationError = updateSpending.error || deleteSpending.error;
 
@@ -107,11 +100,15 @@ export default function EditExpenseScreen() {
             expMemo={expMemo}
             expCategoryId={expCategoryId}
             userCategories={userCategories}
+            imageUri={imageUri}
+            uploading={uploading}
             onChangeType={(type, firstCategoryId) => { setExpType(type); setExpCategoryId(firstCategoryId); setExpGroupKey(null); }}
             onChangeAmount={setExpAmount}
             onChangeMemo={setExpMemo}
             onChangeCategoryId={setExpCategoryId}
             onChangeGroupKey={(g) => setExpGroupKey(g)}
+            onPickImage={pick}
+            onRemoveImage={remove}
           />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -120,22 +117,23 @@ export default function EditExpenseScreen() {
         {mutationError && <Text style={styles.errorText}>{(mutationError as Error).message || "오류가 발생했습니다."}</Text>}
         <Pressable
           disabled={!canSubmit || updateSpending.isPending}
-          onPress={() => updateSpending.mutate(spendingInput(), { onSuccess: () => router.back() })}
+          onPress={() =>
+            updateSpending.mutate(
+              {
+                type: expType === "지출" ? "EXPENSE" : "INCOME",
+                categoryId: expCategoryId ?? undefined,
+                categoryGroupKey: expCategoryId === null ? expGroupKey ?? undefined : undefined,
+                amount: parseInt(expAmount, 10),
+                date: format(selectedDate, "yyyy-MM-dd"),
+                memo: expMemo || null,
+                imageUrl: imageUrl,
+              },
+              { onSuccess: () => router.back() }
+            )
+          }
           style={({ pressed }) => [styles.primaryBtn, (!canSubmit || updateSpending.isPending) && styles.btnDisabled, pressed && { opacity: 0.8 }]}
         >
           <Text style={styles.primaryBtnText}>{updateSpending.isPending ? "수정 중..." : "수정하기"}</Text>
-        </Pressable>
-        <Pressable
-          disabled={!canSubmit || updateSpending.isPending}
-          onPress={() => updateSpending.mutate(spendingInput(), {
-            onSuccess: () => router.push({
-              pathname: "/share-spending/[id]",
-              params: { id: Number(id) },
-            }),
-          })}
-          style={({ pressed }) => [styles.secondaryBtn, (!canSubmit || updateSpending.isPending) && styles.btnDisabled, pressed && { opacity: 0.6 }]}
-        >
-          <Text style={styles.secondaryBtnText}>수정하고 공유하기</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -154,6 +152,4 @@ const styles = StyleSheet.create({
   primaryBtn: { height: 52, borderRadius: 16, backgroundColor: "#3182f6", alignItems: "center", justifyContent: "center" },
   primaryBtnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
   btnDisabled: { opacity: 0.3 },
-  secondaryBtn: { height: 40, alignItems: "center", justifyContent: "center" },
-  secondaryBtnText: { fontSize: 14, fontWeight: "600", color: "#3182f6" },
 });

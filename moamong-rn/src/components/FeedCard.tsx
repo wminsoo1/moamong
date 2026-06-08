@@ -1,5 +1,5 @@
-import { View, Text, TextInput, Pressable, Image, StyleSheet } from "react-native";
-import { Heart, MessageCircle, ArrowUp, Eye } from "lucide-react-native";
+import { View, Text, TextInput, Pressable, Image, StyleSheet, Alert } from "react-native";
+import { Heart, MessageCircle, ArrowUp, Eye, Trash2, Pencil } from "lucide-react-native";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
@@ -31,6 +31,10 @@ interface Props {
   onAddComment: (sharedItemId: number, content: string, onSuccess: () => void) => void;
   isAddingComment: boolean;
   onPressItem: () => void;
+  myId?: number;
+  onDelete?: (sharedItemId: number) => void;
+  onEdit?: (item: FeedItem) => void;
+  onDeleteComment?: (commentId: number) => void;
 }
 
 export function FeedCard({
@@ -38,7 +42,7 @@ export function FeedCard({
   comments, commentText, onCommentTextChange,
   imgErrors, onImgError,
   onToggleReaction, onAddComment, isAddingComment,
-  onPressItem,
+  onPressItem, myId, onDelete, onEdit, onDeleteComment,
 }: Props) {
   const cat = getCategoryByKey(item.category);
   const hasImage = !!item.imageUrl && !imgErrors.has(item.sharedItemId);
@@ -73,6 +77,33 @@ export function FeedCard({
               </View>
               <Text style={styles.feedSender} numberOfLines={1}>{item.senderUsername}</Text>
               <Text style={styles.feedTime}>{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: ko })}</Text>
+              {myId === item.userId && (
+                <>
+                  {onEdit && (
+                    <Pressable
+                      onPress={() => onEdit(item)}
+                      hitSlop={8}
+                      style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.5 }]}
+                    >
+                      <Pencil size={13} color="#adb5bd" strokeWidth={2} />
+                    </Pressable>
+                  )}
+                  {onDelete && (
+                    <Pressable
+                      onPress={() =>
+                        Alert.alert("핫템 삭제", "이 핫템을 삭제할까요?", [
+                          { text: "취소", style: "cancel" },
+                          { text: "삭제", style: "destructive", onPress: () => onDelete(item.sharedItemId) },
+                        ])
+                      }
+                      hitSlop={8}
+                      style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.5 }]}
+                    >
+                      <Trash2 size={13} color="#adb5bd" strokeWidth={2} />
+                    </Pressable>
+                  )}
+                </>
+              )}
             </View>
             <Text style={styles.feedTitle} numberOfLines={2}>{item.title || "핫템"}</Text>
             {item.review && <Text style={styles.feedMemoText} numberOfLines={1}>{item.review}</Text>}
@@ -117,6 +148,18 @@ export function FeedCard({
                   <View style={styles.commentHeader}>
                     <Text style={styles.commentNickname}>{c.username}</Text>
                     <Text style={styles.commentTime}>{formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: ko })}</Text>
+                    {myId === c.userId && onDeleteComment && (
+                      <Pressable
+                        onPress={() => Alert.alert("댓글 삭제", "댓글을 삭제할까요?", [
+                          { text: "취소", style: "cancel" },
+                          { text: "삭제", style: "destructive", onPress: () => onDeleteComment(c.id) },
+                        ])}
+                        hitSlop={8}
+                        style={({ pressed }) => [{ marginLeft: "auto" }, pressed && { opacity: 0.5 }]}
+                      >
+                        <Trash2 size={12} color="#c9cdd2" strokeWidth={2} />
+                      </Pressable>
+                    )}
                   </View>
                   <Text style={styles.commentBody}>{c.content}</Text>
                 </View>
@@ -159,6 +202,7 @@ const styles = StyleSheet.create({
   viewCountText: { fontSize: 10, color: "#adb5bd", fontWeight: "600" },
   feedSender: { fontSize: 13, fontWeight: "700", color: "#4e5968", maxWidth: "50%" },
   feedTime: { fontSize: 11, color: "#adb5bd", marginLeft: "auto" },
+  deleteBtn: { marginLeft: 6 },
   feedTitle: { fontSize: 15, fontWeight: "700", color: "#191f28", lineHeight: 22 },
   feedMemoText: { fontSize: 13, color: "#8b95a1", marginTop: 6, lineHeight: 18 },
   feedActionRow: { flexDirection: "row", alignItems: "center", marginTop: 10 },

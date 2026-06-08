@@ -32,9 +32,9 @@ const OG_OBSERVE_SCRIPT = `
     });
     const observer = new MutationObserver(() => {
       const { title, img } = get();
-      if (title || img) { send(title, img); observer.disconnect(); }
+      if (img) { send(title, img); observer.disconnect(); }
     });
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['content'] });
     setTimeout(() => { const { title, img } = get(); send(title, img); observer.disconnect(); }, 5000);
   })(); true;
 `;
@@ -79,22 +79,41 @@ function WebViewExtractor({ url, onSuccess, onFail }: Props) {
 }
 
 function FetchExtractor({ url, onSuccess, onFail }: Props) {
-  const [useWebView, setUseWebView] = useState(false);
+  const [serverData, setServerData] = useState<OgData | null>(null);
 
   useEffect(() => {
     fetchOgData(url)
       .then((data) => {
-        if (data.title || data.imageUrl) {
+        if (data.imageUrl) {
+          // 이미지까지 있으면 바로 완료
           onSuccess(data);
         } else {
-          setUseWebView(true);
+          // 이미지 없으면 WebView로 시도 (title은 보존)
+          setServerData(data);
         }
       })
-      .catch(() => setUseWebView(true));
+      .catch(() => setServerData({ title: null, imageUrl: null }));
   }, [url]);
 
-  if (useWebView) {
-    return <WebViewExtractor url={url} onSuccess={onSuccess} onFail={onFail} />;
+  if (serverData !== null) {
+    return (
+      <WebViewExtractor
+        url={url}
+        onSuccess={(webData) => {
+          onSuccess({
+            title: serverData.title || webData.title,
+            imageUrl: webData.imageUrl || serverData.imageUrl,
+          });
+        }}
+        onFail={() => {
+          if (serverData.title || serverData.imageUrl) {
+            onSuccess(serverData);
+          } else {
+            onFail();
+          }
+        }}
+      />
+    );
   }
 
   return null;
@@ -109,7 +128,7 @@ function OgExtractorBase({ url, onSuccess, onFail }: Props) {
 
   if (!httpUrl) return null;
 
-  if (httpUrl.includes('coupang.com')) {
+  if (httpUrl.includes('coupang.com') || httpUrl.includes('oliveyoung.co.kr') || httpUrl.includes('oy.run')) {
     return <WebViewExtractor url={httpUrl} onSuccess={onSuccess} onFail={onFail} />;
   }
   return <FetchExtractor url={httpUrl} onSuccess={onSuccess} onFail={onFail} />;

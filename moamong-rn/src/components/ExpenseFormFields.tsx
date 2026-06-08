@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { View, Text, Pressable, TextInput, ScrollView, StyleSheet } from "react-native";
+import { View, Text, Pressable, TextInput, Image, ActivityIndicator, StyleSheet } from "react-native";
 import { router } from "expo-router";
-import { Plus } from "lucide-react-native";
+import { Plus, Camera, X } from "lucide-react-native";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
-import { UserCategory, CategoryGroup, CATEGORY_GROUP_LABELS, EXPENSE_GROUPS, INCOME_GROUPS } from "@/src/features/user/types";
+import { UserCategory, CategoryGroup, EXPENSE_GROUPS, INCOME_GROUPS } from "@/src/features/user/types";
 import { useGroupSettings } from "@/src/features/user/hooks/useGroupSettings";
 
 interface Props {
@@ -12,16 +12,22 @@ interface Props {
   expMemo: string;
   expCategoryId: number | null;
   userCategories: UserCategory[];
+  imageUri?: string | null;
+  uploading?: boolean;
   onChangeType: (type: "지출" | "수입", firstCategoryId: number | null) => void;
   onChangeAmount: (amount: string) => void;
   onChangeMemo: (memo: string) => void;
   onChangeCategoryId: (id: number | null) => void;
   onChangeGroupKey?: (groupKey: CategoryGroup | null) => void;
+  onPickImage?: () => void;
+  onRemoveImage?: () => void;
 }
 
 export function ExpenseFormFields({
   expType, expAmount, expMemo, expCategoryId, userCategories,
+  imageUri, uploading,
   onChangeType, onChangeAmount, onChangeMemo, onChangeCategoryId, onChangeGroupKey,
+  onPickImage, onRemoveImage,
 }: Props) {
   const expAmountDisplay = expAmount ? parseInt(expAmount, 10).toLocaleString() : "";
   const typeStr = expType === "지출" ? "EXPENSE" : "INCOME";
@@ -39,7 +45,6 @@ export function ExpenseFormFields({
     setSelectedGroup(cat?.parentGroup ?? null);
   }, [expType]);
 
-  // 부모에서 expCategoryId가 비동기로 설정될 때(수정 화면) 그룹 동기화
   useEffect(() => {
     if (expCategoryId === null) return;
     const cat = filtered.find((c) => c.id === expCategoryId);
@@ -86,7 +91,7 @@ export function ExpenseFormFields({
         <Text style={styles.unitText}>원</Text>
       </View>
 
-      <View style={[styles.inputRow, { marginTop: 0 }]}>
+      <View style={styles.inputRow}>
         <TextInput
           style={styles.memoInput}
           placeholder="메모를 입력하세요 (선택)"
@@ -95,6 +100,34 @@ export function ExpenseFormFields({
           onChangeText={onChangeMemo}
         />
       </View>
+
+      {onPickImage && (
+        <View style={styles.imageSection}>
+          <Text style={styles.imageSectionLabel}>사진 <Text style={styles.optionalTag}>(선택)</Text></Text>
+          {imageUri ? (
+            <View style={styles.imagePreviewWrap}>
+              <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+              {uploading ? (
+                <View style={styles.imageOverlay}>
+                  <ActivityIndicator color="#fff" />
+                </View>
+              ) : (
+                <Pressable onPress={onRemoveImage} style={styles.imageRemoveBtn}>
+                  <X size={12} color="#fff" strokeWidth={3} />
+                </Pressable>
+              )}
+            </View>
+          ) : (
+            <Pressable
+              onPress={onPickImage}
+              style={({ pressed }) => [styles.imagePickerBtn, pressed && { opacity: 0.6 }]}
+            >
+              <Camera size={18} color="#8b95a1" />
+              <Text style={styles.imagePickerText}>사진 추가</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
 
       <View style={styles.catSection}>
         <View style={styles.catSectionHeader}>
@@ -110,7 +143,6 @@ export function ExpenseFormFields({
           </Pressable>
         </View>
 
-        {/* 상위 카테고리 선택 - wrap 레이아웃 */}
         <View style={styles.groupChips}>
           {availableGroups.map((g) => {
             const isSelected = selectedGroup === g;
@@ -139,27 +171,26 @@ export function ExpenseFormFields({
           })}
         </View>
 
-        {/* 하위 카테고리 선택 */}
         {selectedGroup && (
           <>
             <View style={styles.divider} />
             <View style={styles.catChips}>
-            {subCategories.map((cat) => {
-              const isSelected = expCategoryId === cat.id;
-              return (
-                <Pressable
-                  key={cat.id}
-                  onPress={() => onChangeCategoryId(cat.id)}
-                  style={({ pressed }) => [
-                    styles.catChip,
-                    { backgroundColor: isSelected ? getColor(selectedGroup!) : "#f2f4f6" },
-                    pressed && { opacity: 0.7 },
-                  ]}
-                >
-                  <Text style={[styles.catChipText, { color: isSelected ? "#fff" : "#4e5968" }]}>{cat.name}</Text>
-                </Pressable>
-              );
-            })}
+              {subCategories.map((cat) => {
+                const isSelected = expCategoryId === cat.id;
+                return (
+                  <Pressable
+                    key={cat.id}
+                    onPress={() => onChangeCategoryId(cat.id)}
+                    style={({ pressed }) => [
+                      styles.catChip,
+                      { backgroundColor: isSelected ? getColor(selectedGroup!) : "#f2f4f6" },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Text style={[styles.catChipText, { color: isSelected ? "#fff" : "#4e5968" }]}>{cat.name}</Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </>
         )}
@@ -178,6 +209,15 @@ const styles = StyleSheet.create({
   amountInput: { flex: 1, fontSize: 20, fontWeight: "600", color: "#191f28" },
   unitText: { fontSize: 20, fontWeight: "600", color: "#8b95a1", marginLeft: 4 },
   memoInput: { flex: 1, fontSize: 20, fontWeight: "600", color: "#191f28", paddingVertical: 0 },
+  imageSection: { marginBottom: 20 },
+  imageSectionLabel: { fontSize: 12, fontWeight: "700", color: "#adb5bd", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 },
+  optionalTag: { fontSize: 12, fontWeight: "600", color: "#c9cdd2", textTransform: "none", letterSpacing: 0 },
+  imagePickerBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: "#e5e8eb", borderStyle: "dashed", alignSelf: "flex-start" },
+  imagePickerText: { fontSize: 14, fontWeight: "600", color: "#8b95a1" },
+  imagePreviewWrap: { position: "relative", alignSelf: "flex-start" },
+  imagePreview: { width: 80, height: 80, borderRadius: 12 },
+  imageOverlay: { ...StyleSheet.absoluteFillObject, borderRadius: 12, backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center" },
+  imageRemoveBtn: { position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: 10, backgroundColor: "#4e5968", alignItems: "center", justifyContent: "center" },
   catSection: { marginBottom: 24 },
   catSectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   catSectionLabel: { fontSize: 12, fontWeight: "700", color: "#adb5bd", textTransform: "uppercase", letterSpacing: 1 },

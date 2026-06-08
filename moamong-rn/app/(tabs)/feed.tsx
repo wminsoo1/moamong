@@ -17,6 +17,10 @@ import { useComments } from "@/src/features/feed/queries/useComments";
 import { useAddComment } from "@/src/features/feed/mutations/useAddComment";
 import { useToggleReaction } from "@/src/features/feed/mutations/useToggleReaction";
 import { useRecordView } from "@/src/features/feed/mutations/useRecordView";
+import { useMarkRoomRead } from "@/src/features/room/mutations/useMarkRoomRead";
+import { useDeleteSharedItem } from "@/src/features/feed/mutations/useDeleteSharedItem";
+import { useDeleteComment } from "@/src/features/feed/mutations/useDeleteComment";
+import { useCurrentUser } from "@/src/features/user/queries/useCurrentUser";
 import { FeedItem } from "@/src/features/feed/types";
 import { Plus } from "lucide-react-native";
 import { FeedHeader } from "@/src/components/FeedHeader";
@@ -38,7 +42,9 @@ export default function FeedScreen() {
   useEffect(() => {
     if (rooms.length > 0 && selectedRoomId === null) {
       const systemRoom = rooms.find((r) => r.isSystem);
-      setSelectedRoomId(systemRoom ? systemRoom.id : rooms[0].id);
+      const initialId = systemRoom ? systemRoom.id : rooms[0].id;
+      setSelectedRoomId(initialId);
+      markRoomRead.mutate(initialId);
     }
   }, [rooms]);
   const { feedItems = [], fetchNextPage, hasNextPage, isFetchingNextPage } = useFeed(rooms, selectedRoomId);
@@ -46,6 +52,10 @@ export default function FeedScreen() {
   const addComment = useAddComment();
   const toggleReaction = useToggleReaction();
   const recordView = useRecordView();
+  const markRoomRead = useMarkRoomRead();
+  const deleteSharedItem = useDeleteSharedItem();
+  const deleteComment = useDeleteComment();
+  const { user: me } = useCurrentUser();
 
   let filteredFeed = feedItems || [];
   if (selectedCategory) {
@@ -88,6 +98,21 @@ export default function FeedScreen() {
           Linking.openURL(item.url).catch(() => {});
         }
       }}
+      myId={me?.id}
+      onDelete={(id) => deleteSharedItem.mutate(id)}
+      onDeleteComment={(commentId) => deleteComment.mutate(commentId)}
+      onEdit={(feedItem) => router.push({
+        pathname: "/edit-shared-item",
+        params: {
+          sharedItemId: String(feedItem.sharedItemId),
+          title: feedItem.title ?? "",
+          url: feedItem.url ?? "",
+          imageUrl: feedItem.imageUrl ?? "",
+          memo: feedItem.review ?? "",
+          category: feedItem.category,
+          amount: feedItem.amount != null ? String(feedItem.amount) : "",
+        },
+      })}
     />
     );
   }
@@ -100,7 +125,10 @@ export default function FeedScreen() {
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
         selectedRoomId={selectedRoomId}
-        onSelectRoom={setSelectedRoomId}
+        onSelectRoom={(id) => {
+          setSelectedRoomId(id);
+          if (id != null) markRoomRead.mutate(id);
+        }}
         rooms={rooms}
       />
 

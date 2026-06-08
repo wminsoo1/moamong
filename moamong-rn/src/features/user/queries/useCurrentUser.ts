@@ -7,7 +7,7 @@ export interface CurrentUser {
   username: string;
   nickname: string;
   profileImageUrl: string | null;
-  notificationsEnabled: boolean;
+  notificationEnabled: boolean;
 }
 
 export function useCurrentUser() {

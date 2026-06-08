@@ -6,6 +6,8 @@ export interface Reaction {
 
 export interface FeedItem {
   sharedItemId: number;
+  userId: number;
+  shareGroupId: string;
   senderUsername: string;
   category: string;
   amount: number | null;
@@ -27,6 +29,7 @@ export interface FeedPage {
 
 export interface FeedComment {
   id: number;
+  userId: number;
   username: string;
   content: string;
   createdAt: string;

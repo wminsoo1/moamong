@@ -48,12 +48,23 @@ export default function EditRecurringSpendingScreen() {
   const deleteMutation = useDeleteRecurringSpending();
 
   useEffect(() => {
+    if (!item) return;
+    setExpType(item.type === "INCOME" ? "수입" : "지출");
+    setExpAmount(item.amount.toString());
+    setExpMemo(item.memo ?? "");
+    setExpGroupKey(item.categoryGroup ?? null);
+    setDayOfMonth(item.dayOfMonth.toString());
+    setStartDate(item.startDate ?? "");
+    setEndDate(item.endDate ?? "");
+  }, [item?.id]);
+
+  useEffect(() => {
     if (userCategories.length === 0 || !item) return;
     const cat = userCategories.find(
       (c) => c.name === item.categoryName && c.type === item.type
     );
     setExpCategoryId(cat?.id ?? null);
-  }, [userCategories]);
+  }, [userCategories, item?.id]);
 
   const handleDayChange = (t: string) => {
     const digits = t.replace(/[^0-9]/g, "");

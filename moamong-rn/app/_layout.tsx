@@ -55,7 +55,6 @@ export default function RootLayout() {
             <Stack.Screen name="stats" />
             <Stack.Screen name="share" />
             <Stack.Screen name="add-expense" />
-            <Stack.Screen name="share-spending/[id]" />
             <Stack.Screen name="edit-expense/[id]" />
             <Stack.Screen name="category-add" />
             <Stack.Screen name="category-edit" />
@@ -63,6 +62,7 @@ export default function RootLayout() {
             <Stack.Screen name="category-group-management" />
             <Stack.Screen name="category-group-edit" />
             <Stack.Screen name="share-item" />
+            <Stack.Screen name="share-settings" />
             <Stack.Screen name="recurring-spendings" />
             <Stack.Screen name="add-recurring-spending" />
             <Stack.Screen name="edit-recurring-spending/[id]" />

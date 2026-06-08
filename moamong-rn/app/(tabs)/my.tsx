@@ -12,12 +12,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  Linking,
 } from "react-native";
+import * as Notifications from "expo-notifications";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCurrentUser } from "@/src/features/user/queries/useCurrentUser";
 import { useUpdateNickname } from "@/src/features/user/mutations/useUpdateNickname";
 import { useToggleNotification } from "@/src/features/user/mutations/useToggleNotification";
 import { useLogout } from "@/src/features/user/mutations/useLogout";
+import { useQueryClient } from "@tanstack/react-query";
+import { apiClient, clearSessionId } from "@/src/lib/api";
 import { router } from "expo-router";
 import {
   Bell,
@@ -27,6 +31,10 @@ import {
   LayoutGrid,
   ListTodo,
   Repeat,
+  Share2,
+  BookOpen,
+  BookUser,
+  UserX,
 } from "lucide-react-native";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -47,7 +55,7 @@ interface Me {
   id: number;
   nickname: string;
   username: string;
-  isNotificationEnabled: boolean;
+  notificationsEnabled: boolean;
 }
 
 interface UserCategory {
@@ -70,6 +78,29 @@ export default function MyScreen() {
   const updateNickname = useUpdateNickname();
   const toggleNotification = useToggleNotification();
   const { logout } = useLogout();
+  const queryClient = useQueryClient();
+
+  const handleNotificationToggle = async (enabled: boolean) => {
+    if (enabled) {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status === "denied") {
+        Alert.alert(
+          "알림 권한 필요",
+          "알림을 받으려면 설정에서 알림을 허용해주세요.",
+          [
+            { text: "취소", style: "cancel" },
+            { text: "설정 열기", onPress: () => Linking.openSettings() },
+          ]
+        );
+        return;
+      }
+      if (status === "undetermined") {
+        const { status: newStatus } = await Notifications.requestPermissionsAsync();
+        if (newStatus !== "granted") return;
+      }
+    }
+    toggleNotification.mutate(enabled);
+  };
 
   const openNicknameDialog = () => {
     if (!me) return;
@@ -126,6 +157,33 @@ export default function MyScreen() {
             <Text style={styles.menuText}>방 관리</Text>
             <ChevronRight size={20} color="#adb5bd" />
           </Pressable>
+          <View style={styles.menuDivider} />
+          <Pressable
+            onPress={() => router.push("/friend-accounts")}
+            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: "#f9fafb" }]}
+          >
+            <BookUser size={20} color="#4e5968" />
+            <Text style={styles.menuText}>친구 가계부 보기</Text>
+            <ChevronRight size={20} color="#adb5bd" />
+          </Pressable>
+          <View style={styles.menuDivider} />
+          <Pressable
+            onPress={() => router.push("/share-settings")}
+            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: "#f9fafb" }]}
+          >
+            <Share2 size={20} color="#4e5968" />
+            <Text style={styles.menuText}>공유할 방</Text>
+            <ChevronRight size={20} color="#adb5bd" />
+          </Pressable>
+          <View style={styles.menuDivider} />
+          <Pressable
+            onPress={() => router.push("/account-share-settings")}
+            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: "#f9fafb" }]}
+          >
+            <BookOpen size={20} color="#4e5968" />
+            <Text style={styles.menuText}>가계부 공개 범위</Text>
+            <ChevronRight size={20} color="#adb5bd" />
+          </Pressable>
         </View>
 
         {/* Section: 설정 */}
@@ -179,11 +237,11 @@ export default function MyScreen() {
             <Bell size={20} color="#4e5968" />
             <View style={{ flex: 1 }}>
               <Text style={styles.menuText}>실시간 알림 수신</Text>
-              <Text style={styles.menuSubText}>핫템 공유 시 실시간 푸시 알림</Text>
+              <Text style={styles.menuSubText}>피드 공유 시 실시간 푸시 알림</Text>
             </View>
             <Switch
-              value={me.isNotificationEnabled}
-              onValueChange={(v) => toggleNotification.mutate(v)}
+              value={me.notificationEnabled}
+              onValueChange={handleNotificationToggle}
               disabled={toggleNotification.isPending}
               trackColor={{ false: "#e5e8eb", true: "#3182f6" }}
               thumbColor="#fff"
@@ -205,6 +263,31 @@ export default function MyScreen() {
           >
             <LogOut size={20} color="#f04452" />
             <Text style={[styles.menuText, { color: "#f04452" }]}>로그아웃</Text>
+          </Pressable>
+          <View style={styles.menuDivider} />
+          <Pressable
+            onPress={() =>
+              Alert.alert("회원 탈퇴", "탈퇴하면 모든 데이터가 삭제되며 복구할 수 없어요. 정말 탈퇴하시겠어요?", [
+                { text: "취소", style: "cancel" },
+                {
+                  text: "탈퇴",
+                  style: "destructive",
+                  onPress: async () => {
+                    try {
+                      await apiClient("/api/users/me", { method: "DELETE" });
+                    } finally {
+                      await clearSessionId();
+                      queryClient.clear();
+                      router.replace("/(auth)/login");
+                    }
+                  },
+                },
+              ])
+            }
+            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: "#f9fafb" }]}
+          >
+            <UserX size={20} color="#adb5bd" />
+            <Text style={[styles.menuText, { color: "#adb5bd" }]}>회원 탈퇴</Text>
           </Pressable>
         </View>
 
@@ -367,4 +450,5 @@ const styles = StyleSheet.create({
   dialogSaveText: { fontSize: 13, fontWeight: "600", color: "#fff" },
   errorText: { fontSize: 12, color: "#f04452", textAlign: "center", marginBottom: 8 },
   btnDisabled: { opacity: 0.3 },
+
 });

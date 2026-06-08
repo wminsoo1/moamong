@@ -1,5 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { format } from "date-fns";
+import { Camera } from "lucide-react-native";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
 import { Spending, RecurringSpending } from "@/src/features/spending/types";
 import { CategoryGroup } from "@/src/features/user/types";
@@ -34,8 +35,15 @@ export function DailyExpenseList({ selectedDate, spendings, recurrings = [], onP
               {(() => {
                 const g = expense.categoryGroup as CategoryGroup;
                 return (
-                  <View style={[styles.expenseIcon, { backgroundColor: getColor(g) }]}>
-                    <CategoryIcon emoji={getIcon(g)} color={getColor(g)} isWhite size={20} />
+                  <View style={{ position: "relative" }}>
+                    <View style={[styles.expenseIcon, { backgroundColor: getColor(g) }]}>
+                      <CategoryIcon emoji={getIcon(g)} color={getColor(g)} isWhite size={20} />
+                    </View>
+                    {expense.imageUrl && (
+                      <View style={styles.imageBadge}>
+                        <Camera size={9} color="#fff" strokeWidth={2.5} />
+                      </View>
+                    )}
                   </View>
                 );
               })()}
@@ -52,10 +60,9 @@ export function DailyExpenseList({ selectedDate, spendings, recurrings = [], onP
                     <Text style={styles.expenseName} numberOfLines={1}>
                       {expense.memo || expense.categoryName}
                     </Text>
-                    {(subLine || expense.shared) && (
+                    {subLine && (
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
-                        {subLine && <Text style={styles.expenseCat} numberOfLines={1}>{subLine}</Text>}
-                        {expense.shared && <Text style={styles.expenseShared}>공유됨</Text>}
+                        <Text style={styles.expenseCat} numberOfLines={1}>{subLine}</Text>
                       </View>
                     )}
                   </View>
@@ -76,7 +83,7 @@ export function DailyExpenseList({ selectedDate, spendings, recurrings = [], onP
               {(() => {
                 const g = r.categoryGroup as CategoryGroup;
                 return (
-                  <View style={[styles.expenseIcon, { backgroundColor: getColor(g) + "99" }]}>
+                  <View style={[styles.expenseIcon, { backgroundColor: getColor(g) }]}>
                     <CategoryIcon emoji={getIcon(g)} color={getColor(g)} isWhite size={20} />
                   </View>
                 );
@@ -128,9 +135,21 @@ const styles = StyleSheet.create({
   expenseInfo: { flex: 1 },
   expenseName: { fontSize: 15, fontWeight: "700", color: "#191f28" },
   expenseCat: { fontSize: 12, fontWeight: "600", color: "#8b95a1" },
-  expenseShared: { fontSize: 12, fontWeight: "600", color: "#3182f6" },
   recurringBadge: { fontSize: 12, fontWeight: "600", color: "#8b5cf6" },
   expenseAmt: { fontSize: 15, fontWeight: "800" },
   amtIncome: { color: "#3182f6" },
   amtExpense: { color: "#f04452" },
+  imageBadge: {
+    position: "absolute",
+    bottom: -3,
+    right: -3,
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    backgroundColor: "#3182f6",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
 });

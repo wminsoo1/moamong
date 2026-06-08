@@ -10,6 +10,7 @@ import { ChevronLeft } from "lucide-react-native";
 import { ExpenseFormFields } from "@/src/components/ExpenseFormFields";
 import { useUserCategories } from "@/src/features/user/queries/useUserCategories";
 import { useCreateSpending } from "@/src/features/spending/mutations/useCreateSpending";
+import { useImageUpload } from "@/src/features/spending/hooks/useImageUpload";
 import { useState } from "react";
 
 export default function AddExpenseScreen() {
@@ -24,33 +25,23 @@ export default function AddExpenseScreen() {
 
   const { userCategories } = useUserCategories();
   const createSpending = useCreateSpending();
+  const { imageUri, imageUrl, uploading, pick, remove } = useImageUpload();
 
-  const canSubmit = expAmount !== "" && parseInt(expAmount, 10) > 0 && (expCategoryId !== null || expGroupKey !== null);
-
-  const spendingInput = () => ({
-    type: expType === "지출" ? "EXPENSE" as const : "INCOME" as const,
-    categoryId: expCategoryId ?? undefined,
-    categoryGroupKey: expCategoryId === null ? expGroupKey ?? undefined : undefined,
-    amount: parseInt(expAmount, 10),
-    date: format(selectedDate, "yyyy-MM-dd"),
-    memo: expMemo || null,
-  });
+  const canSubmit = expAmount !== "" && parseInt(expAmount, 10) > 0 && (expCategoryId !== null || expGroupKey !== null) && !uploading;
 
   const handleSave = () => {
-    createSpending.mutate(spendingInput(), {
-      onSuccess: () => router.back(),
-    });
-  };
-
-  const handleGoToShare = () => {
-    createSpending.mutate(spendingInput(), {
-      onSuccess: (spending) => {
-        router.push({
-          pathname: "/share-spending/[id]",
-          params: { id: spending.id },
-        });
+    createSpending.mutate(
+      {
+        type: expType === "지출" ? "EXPENSE" : "INCOME",
+        categoryId: expCategoryId ?? undefined,
+        categoryGroupKey: expCategoryId === null ? expGroupKey ?? undefined : undefined,
+        amount: parseInt(expAmount, 10),
+        date: format(selectedDate, "yyyy-MM-dd"),
+        memo: expMemo || null,
+        imageUrl: imageUrl ?? null,
       },
-    });
+      { onSuccess: () => router.back() }
+    );
   };
 
   return (
@@ -73,11 +64,15 @@ export default function AddExpenseScreen() {
             expMemo={expMemo}
             expCategoryId={expCategoryId}
             userCategories={userCategories}
+            imageUri={imageUri}
+            uploading={uploading}
             onChangeType={(type, firstCategoryId) => { setExpType(type); setExpCategoryId(firstCategoryId); setExpGroupKey(null); }}
             onChangeAmount={setExpAmount}
             onChangeMemo={setExpMemo}
             onChangeCategoryId={setExpCategoryId}
             onChangeGroupKey={setExpGroupKey}
+            onPickImage={pick}
+            onRemoveImage={remove}
           />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -92,13 +87,6 @@ export default function AddExpenseScreen() {
           style={({ pressed }) => [styles.primaryBtn, (!canSubmit || createSpending.isPending) && styles.btnDisabled, pressed && { opacity: 0.8 }]}
         >
           <Text style={styles.primaryBtnText}>{createSpending.isPending ? "저장 중..." : "기록하기"}</Text>
-        </Pressable>
-        <Pressable
-          disabled={!canSubmit || createSpending.isPending}
-          onPress={handleGoToShare}
-          style={({ pressed }) => [styles.secondaryBtn, (!canSubmit || createSpending.isPending) && styles.btnDisabled, pressed && { opacity: 0.6 }]}
-        >
-          <Text style={styles.secondaryBtnText}>기록하고 공유하기</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -117,6 +105,4 @@ const styles = StyleSheet.create({
   primaryBtn: { height: 52, borderRadius: 16, backgroundColor: "#3182f6", alignItems: "center", justifyContent: "center" },
   primaryBtnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
   btnDisabled: { opacity: 0.3 },
-  secondaryBtn: { height: 40, alignItems: "center", justifyContent: "center" },
-  secondaryBtnText: { fontSize: 14, fontWeight: "600", color: "#3182f6" },
 });
