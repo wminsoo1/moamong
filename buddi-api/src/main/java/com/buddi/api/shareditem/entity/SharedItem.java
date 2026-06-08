@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Table(name = "shared_items",
@@ -19,7 +20,7 @@ import java.util.Set;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SharedItem {
 
-    private static final Set<String> ALLOWED_EMOJIS = Set.of("❤️", "🛍️");
+    private static final Set<String> ALLOWED_EMOJIS = Set.of("❤️");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,6 +47,9 @@ public class SharedItem {
     private Long spendingId;
 
     private Long amount;
+
+    @Column(nullable = false)
+    private String shareGroupId;
 
     @Column(nullable = false)
     private boolean isPublic = false;
@@ -97,12 +101,18 @@ public class SharedItem {
         }
     }
 
-    public void shareToRooms(List<Long> roomIds) {
-        roomIds.forEach(this::shareToRoom);
+    public void update(String title, String url, String imageUrl, String memo, SharedItemCategory category, Long amount) {
+        if (title != null && !title.isBlank()) this.title = title;
+        if (url != null && !url.isBlank()) this.url = url;
+        if (imageUrl != null) this.imageUrl = imageUrl;
+        if (memo != null) this.memo = memo;
+        if (category != null) this.category = category;
+        if (amount != null) this.amount = amount;
     }
 
     public static SharedItem of(Long userId, String title, String url, String imageUrl, String memo,
-                                SharedItemCategory category, Long spendingId, Long amount, boolean isPublic) {
+                                SharedItemCategory category, Long spendingId, Long amount, boolean isPublic,
+                                String shareGroupId) {
         if (title == null || title.isBlank()) throw new IllegalArgumentException("제목을 입력해주세요");
         if (url == null || url.isBlank()) throw new IllegalArgumentException("링크를 입력해주세요");
         if (category == null) throw new IllegalArgumentException("카테고리를 선택해주세요");
@@ -116,6 +126,7 @@ public class SharedItem {
         item.spendingId = spendingId;
         item.amount = amount;
         item.isPublic = isPublic;
+        item.shareGroupId = shareGroupId;
         return item;
     }
 }

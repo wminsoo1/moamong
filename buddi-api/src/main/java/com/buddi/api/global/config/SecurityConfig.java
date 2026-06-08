@@ -1,18 +1,11 @@
 package com.buddi.api.global.config;
 
-import com.buddi.api.global.oauth2.CustomOAuth2UserService;
-import com.buddi.api.global.oauth2.OAuth2FailureHandler;
-import com.buddi.api.global.oauth2.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
-import org.springframework.security.oauth2.core.endpoint.PkceParameterNames;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.session.web.http.HeaderHttpSessionIdResolver;
@@ -28,11 +21,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomOAuth2UserService customOAuth2UserService;
-    private final OAuth2SuccessHandler oAuth2SuccessHandler;
-    private final OAuth2FailureHandler oAuth2FailureHandler;
-    private final ClientRegistrationRepository clientRegistrationRepository;
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -45,17 +33,9 @@ public class SecurityConfig {
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login/**", "/oauth2/**", "/debug/login", "/api/og").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
+                        .requestMatchers("/api/auth/kakao", "/api/auth/apple", "/api/og").permitAll()
                         .anyRequest().authenticated()
-                )
-                .oauth2Login(oauth2 -> oauth2
-                        .authorizationEndpoint(endpoint -> endpoint
-                                .authorizationRequestResolver(authorizationRequestResolver())
-                        )
-                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                        .successHandler(oAuth2SuccessHandler)
-                        .failureHandler(oAuth2FailureHandler)
                 );
 
         return http.build();
@@ -76,31 +56,15 @@ public class SecurityConfig {
     }
 
     @Bean
-    public OAuth2AuthorizationRequestResolver authorizationRequestResolver() {
-        DefaultOAuth2AuthorizationRequestResolver resolver =
-                new DefaultOAuth2AuthorizationRequestResolver(
-                        clientRegistrationRepository, "/oauth2/authorization");
-        resolver.setAuthorizationRequestCustomizer(customizer ->
-                customizer
-                        .additionalParameters(params -> {
-                            params.remove(PkceParameterNames.CODE_CHALLENGE);
-                            params.remove(PkceParameterNames.CODE_CHALLENGE_METHOD);
-                        })
-                        .attributes(attrs -> attrs.remove(PkceParameterNames.CODE_VERIFIER))
-        );
-        return resolver;
-    }
-
-    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-                "http://localhost:3000",      // 브라우저 개발
-                "http://localhost:5173",      // 브라우저 개발 (구버전)
-                "http://10.0.2.2:3000",       // 에뮬레이터 개발
-                "https://localhost",          // Android 배포 앱 (Capacitor)
-                "capacitor://localhost",      // iOS 배포 앱 (Capacitor)
-                "https://moamong.com"         // 웹 배포
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://10.0.2.2:3000",
+                "https://localhost",
+                "capacitor://localhost",
+                "https://moamong.com"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
@@ -110,6 +74,4 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
-
-
 }

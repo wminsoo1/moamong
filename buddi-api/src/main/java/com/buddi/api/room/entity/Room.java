@@ -105,6 +105,17 @@ public class Room {
         removeMember(targetUserId);
     }
 
+    public String regenerateInviteCode() {
+        this.inviteCode = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
+        return this.inviteCode;
+    }
+
+    public void rename(String name) {
+        if (name == null || name.isBlank()) throw new IllegalArgumentException("방 이름을 입력해주세요");
+        if (name.length() > 30) throw new IllegalArgumentException("방 이름은 30자 이하로 입력해주세요");
+        this.name = name;
+    }
+
     public void markRead(Long userId) {
         readStates.stream()
                 .filter(r -> r.getUserId().equals(userId))

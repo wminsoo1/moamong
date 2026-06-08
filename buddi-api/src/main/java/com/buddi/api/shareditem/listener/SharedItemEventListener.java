@@ -18,6 +18,6 @@ public class SharedItemEventListener {
     public void saveOutbox(SharedItemSharedEvent event) {
         sharedItemOutboxRepository.save(SharedItemOutbox.of(
                 event.sharedItemId(), event.userId(), event.amount(),
-                event.url(), event.title(), event.roomIds()));
+                event.url(), event.title(), event.memo(), event.roomIds()));
     }
 }

@@ -21,7 +21,7 @@ public class CategoryGroupMeta {
             Map.entry("EMPLOYMENT",   new String[]{"근로소득",     "#F59E0B", "Banknote"}),
             Map.entry("INVESTMENT",   new String[]{"투자/재테크",  "#3B82F6", "TrendingUp"}),
             Map.entry("PENSION",      new String[]{"연금/수당",    "#607D8B", "PiggyBank"}),
-            Map.entry("MISC",         new String[]{"기타",         "#9CA3AF", "Package"}),
+            Map.entry("MISC",         new String[]{"기타",         "#9CA3AF", "MoreHorizontal"}),
             Map.entry("ETC",          new String[]{"기타",         "#6B7280", "Coins"})
     );
 

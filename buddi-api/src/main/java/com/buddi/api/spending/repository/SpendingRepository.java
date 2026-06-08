@@ -16,6 +16,8 @@ public interface SpendingRepository extends JpaRepository<Spending, Long> {
 
     boolean existsByUserId(Long userId);
 
+    void deleteAllByUserId(Long userId);
+
     @Query("SELECT new com.buddi.api.spending.dto.WeeklyAmountDto(FLOOR((DAY(s.date) - 1) / 7) + 1, SUM(s.amount)) " +
            "FROM Spending s " +
            "WHERE s.userId = :userId AND s.date BETWEEN :start AND :end AND s.type = com.buddi.api.spending.entity.SpendingType.EXPENSE " +

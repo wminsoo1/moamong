@@ -6,6 +6,7 @@ import com.buddi.api.spending.dto.RecurringSpendingResponse;
 import com.buddi.api.spending.service.RecurringSpendingCommandService;
 import com.buddi.api.spending.service.RecurringSpendingQueryService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class RecurringSpendingController {
     private final RecurringSpendingQueryService queryService;
 
     @PostMapping
-    public ResponseEntity<RecurringSpendingResponse> create(@RequestBody RecurringSpendingRequest request,
+    public ResponseEntity<RecurringSpendingResponse> create(@Valid @RequestBody RecurringSpendingRequest request,
                                                              Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         return ResponseEntity.ok(commandService.create(principal.getUserId(), request));
@@ -43,7 +44,7 @@ public class RecurringSpendingController {
 
     @PostMapping("/{id}")
     public ResponseEntity<RecurringSpendingResponse> update(@PathVariable Long id,
-                                                             @RequestBody RecurringSpendingRequest request,
+                                                             @Valid @RequestBody RecurringSpendingRequest request,
                                                              Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         return ResponseEntity.ok(commandService.update(principal.getUserId(), id, request));

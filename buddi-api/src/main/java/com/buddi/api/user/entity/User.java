@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -51,6 +53,16 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CategoryGroup> categoryGroups = new ArrayList<>();
 
+    @ElementCollection
+    @CollectionTable(name = "user_share_rooms", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "room_id")
+    private Set<Long> shareRoomIds = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "user_hidden_categories", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "category_group")
+    private Set<String> hiddenCategoryGroups = new HashSet<>();
+
     @Builder(access = AccessLevel.PRIVATE)
     private User(String provider, String providerId, String nickname) {
         this.provider = provider;
@@ -81,8 +93,8 @@ public class User {
     }
 
     public void assignUsername(String username) {
-        if (username == null || !username.matches("^[a-zA-Z0-9_]{3,20}$")) {
-            throw new IllegalArgumentException("3~20자, 영문/숫자/언더스코어만 사용 가능합니다");
+        if (username == null || !username.matches("^[a-zA-Z0-9_\\uAC00-\\uD7A3]{2,20}$")) {
+            throw new IllegalArgumentException("2~20자, 한글/영문/숫자/언더스코어만 사용 가능합니다");
         }
         this.username = username;
     }
@@ -104,8 +116,35 @@ public class User {
         this.fcmToken = null;
     }
 
+    public void anonymize() {
+        this.deletedAt = LocalDateTime.now();
+        this.fcmToken = null;
+        this.nickname = "탈퇴한 사용자";
+        this.username = null;
+        // providerId를 변경해 재로그인 시 기존 계정과 연결 안 되도록
+        this.providerId = "deleted_" + this.id;
+    }
+
     public void reactivate() {
         this.deletedAt = null;
+    }
+
+    public List<Long> getShareRoomIds() {
+        return new ArrayList<>(shareRoomIds);
+    }
+
+    public void updateShareRoomIds(List<Long> roomIds) {
+        this.shareRoomIds.clear();
+        this.shareRoomIds.addAll(roomIds);
+    }
+
+    public List<String> getHiddenCategoryGroups() {
+        return new ArrayList<>(hiddenCategoryGroups);
+    }
+
+    public void updateHiddenCategoryGroups(List<String> groups) {
+        this.hiddenCategoryGroups.clear();
+        this.hiddenCategoryGroups.addAll(groups);
     }
 
     public boolean isDeleted() {

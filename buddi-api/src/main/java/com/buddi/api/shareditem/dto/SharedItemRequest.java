@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-public record ManualSharedItemRequest(
+public record SharedItemRequest(
         @Size(max = 2000, message = "URL은 2000자 이하여야 합니다")
         String url,
         @NotBlank(message = "제목을 입력해주세요")
@@ -20,6 +20,7 @@ public record ManualSharedItemRequest(
         String review,
         @NotNull(message = "카테고리를 선택해주세요")
         SharedItemCategory category,
+        Long amount,
         @NotEmpty(message = "공유할 방을 선택해주세요")
         List<Long> roomIds,
         boolean isPublic

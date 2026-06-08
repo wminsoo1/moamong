@@ -40,3 +40,8 @@ variable "github_repo" {
   description = "GitHub 레포 (org/repo 형식)"
   default     = "wminsoo1/moamong"
 }
+
+variable "image_bucket_name" {
+  description = "유저 업로드 이미지 S3 버킷 이름"
+  default     = "moamong-images"
+}

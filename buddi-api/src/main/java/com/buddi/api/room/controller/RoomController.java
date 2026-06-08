@@ -65,6 +65,29 @@ public class RoomController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{roomId}/invite-code/regenerate")
+    public ResponseEntity<java.util.Map<String, String>> regenerateInviteCode(
+            @PathVariable Long roomId,
+            Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        String newCode = roomCommandService.regenerateInviteCode(roomId, principal.getUserId());
+        return ResponseEntity.ok(java.util.Map.of("inviteCode", newCode));
+    }
+
+    @PatchMapping("/{roomId}/name")
+    public ResponseEntity<Void> renameRoom(@PathVariable Long roomId,
+                                            @RequestBody java.util.Map<String, String> body,
+                                            Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        String name = body.get("name");
+        if (name == null || name.isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "방 이름을 입력해주세요");
+        }
+        roomCommandService.renameRoom(roomId, principal.getUserId(), name);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{roomId}/read")
     public ResponseEntity<Void> markRead(@PathVariable Long roomId, Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();

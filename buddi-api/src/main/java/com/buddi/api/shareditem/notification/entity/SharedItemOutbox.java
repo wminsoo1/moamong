@@ -36,6 +36,9 @@ public class SharedItemOutbox {
     @Column
     private String title;
 
+    @Column
+    private String memo;
+
     @Column(nullable = false)
     private String roomIds;
 
@@ -76,13 +79,14 @@ public class SharedItemOutbox {
     }
 
     public static SharedItemOutbox of(Long sharedItemId, Long senderId, long amount,
-                                      String url, String title, List<Long> roomIds) {
+                                      String url, String title, String memo, List<Long> roomIds) {
         SharedItemOutbox outbox = new SharedItemOutbox();
         outbox.sharedItemId = sharedItemId;
         outbox.senderId = senderId;
         outbox.amount = amount;
         outbox.url = url;
         outbox.title = title;
+        outbox.memo = memo;
         outbox.roomIds = roomIds.stream().map(String::valueOf).collect(Collectors.joining(","));
         return outbox;
     }

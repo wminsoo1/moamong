@@ -36,6 +36,13 @@ public class RoomQueryService {
     }
 
     @Transactional(readOnly = true)
+    public boolean isSystemRoom(Long roomId) {
+        return roomRepository.findById(roomId)
+                .map(Room::isSystem)
+                .orElse(false);
+    }
+
+    @Transactional(readOnly = true)
     public List<Long> getRoomMemberIds(Long roomId, Long excludeUserId) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -62,5 +69,12 @@ public class RoomQueryService {
         if (!room.hasMember(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "방 멤버가 아닙니다");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isMember(Long roomId, Long userId) {
+        return roomRepository.findById(roomId)
+                .map(room -> room.hasMember(userId))
+                .orElse(false);
     }
 }

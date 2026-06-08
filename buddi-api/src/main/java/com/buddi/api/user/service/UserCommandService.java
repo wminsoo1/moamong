@@ -1,6 +1,11 @@
 package com.buddi.api.user.service;
 
+import com.buddi.api.room.entity.Room;
+import com.buddi.api.room.repository.RoomRepository;
+import com.buddi.api.shareditem.repository.SharedItemRepository;
 import com.buddi.api.spending.entity.SpendingType;
+import com.buddi.api.spending.repository.RecurringSpendingRepository;
+import com.buddi.api.spending.repository.SpendingRepository;
 import com.buddi.api.user.dto.CategoryGroupResponse;
 import com.buddi.api.user.dto.CategoryResponse;
 import com.buddi.api.user.entity.User;
@@ -18,6 +23,10 @@ import java.util.List;
 public class UserCommandService {
 
     private final UserRepository userRepository;
+    private final SpendingRepository spendingRepository;
+    private final RecurringSpendingRepository recurringSpendingRepository;
+    private final SharedItemRepository sharedItemRepository;
+    private final RoomRepository roomRepository;
 
     @Transactional
     public void saveFcmToken(Long userId, String token) {
@@ -54,7 +63,27 @@ public class UserCommandService {
     public void withdraw(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        user.deactivate();
+
+        // 지출 / 정기지출 삭제
+        spendingRepository.deleteAllByUserId(userId);
+        recurringSpendingRepository.deleteAllByUserId(userId);
+
+        // 공유 핫템 삭제
+        sharedItemRepository.deleteAllByUserId(userId);
+
+        // 방 처리: 방장이면 방 삭제, 멤버면 탈퇴
+        List<Room> rooms = roomRepository.findByUserId(userId);
+        for (Room room : rooms) {
+            if (room.isSystem()) continue;
+            if (room.getCreatedBy().equals(userId)) {
+                roomRepository.delete(room);
+            } else {
+                room.removeMember(userId);
+            }
+        }
+
+        // 개인정보 익명화 (재가입 가능하도록 providerId는 삭제 표시)
+        user.anonymize();
     }
 
     @Transactional
@@ -130,5 +159,21 @@ public class UserCommandService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         user.updateNotificationSetting(enabled);
+    }
+
+    @Transactional
+    public List<Long> updateShareRoomIds(Long userId, List<Long> roomIds) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        user.updateShareRoomIds(roomIds);
+        return user.getShareRoomIds();
+    }
+
+    @Transactional
+    public List<String> updateHiddenCategoryGroups(Long userId, List<String> groups) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        user.updateHiddenCategoryGroups(groups);
+        return user.getHiddenCategoryGroups();
     }
 }

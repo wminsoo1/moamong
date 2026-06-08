@@ -17,4 +17,5 @@ public interface NotificationSentRepository extends JpaRepository<NotificationSe
 
     @Query("SELECT s FROM NotificationSent s WHERE s.status = 'PROCESSING' AND s.claimedAt < :threshold")
     List<NotificationSent> findStuckProcessing(@Param("threshold") LocalDateTime threshold);
+
 }

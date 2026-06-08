@@ -12,6 +12,8 @@ public interface RecurringSpendingRepository extends JpaRepository<RecurringSpen
 
     List<RecurringSpending> findByUserIdOrderByDayOfMonth(Long userId);
 
+    void deleteAllByUserId(Long userId);
+
     @Query("SELECT r FROM RecurringSpending r WHERE r.userId = :userId " +
            "AND r.startDate <= :monthEnd " +
            "AND (r.endDate IS NULL OR r.endDate >= :monthStart)")

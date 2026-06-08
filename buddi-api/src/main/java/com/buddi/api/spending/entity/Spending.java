@@ -41,15 +41,14 @@ public class Spending {
 
     private String memo;
 
-    @Column(nullable = false)
-    private boolean shared = false;
+    private String imageUrl;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Builder(access = AccessLevel.PRIVATE)
     private Spending(Long userId, SpendingType type, String categoryName,
-                     String categoryGroup, Long amount, LocalDate date, String memo) {
+                     String categoryGroup, Long amount, LocalDate date, String memo, String imageUrl) {
         this.userId = userId;
         this.type = type;
         this.categoryName = categoryName;
@@ -57,6 +56,7 @@ public class Spending {
         this.amount = amount;
         this.date = date;
         this.memo = memo;
+        this.imageUrl = imageUrl;
     }
 
     @PrePersist
@@ -64,12 +64,8 @@ public class Spending {
         createdAt = LocalDateTime.now();
     }
 
-    public void markShared() {
-        this.shared = true;
-    }
-
     public void update(SpendingType type, String categoryName, String categoryGroup,
-                       Long amount, LocalDate date, String memo) {
+                       Long amount, LocalDate date, String memo, String imageUrl) {
         if (amount == null || amount <= 0) throw new IllegalArgumentException("금액은 0보다 커야 합니다");
         this.type = type;
         this.categoryName = categoryName;
@@ -77,10 +73,11 @@ public class Spending {
         this.amount = amount;
         this.date = date;
         this.memo = memo;
+        this.imageUrl = imageUrl;
     }
 
     public static Spending of(Long userId, SpendingType type, String categoryName,
-                               String categoryGroup, Long amount, LocalDate date, String memo) {
+                               String categoryGroup, Long amount, LocalDate date, String memo, String imageUrl) {
         if (amount == null || amount <= 0) throw new IllegalArgumentException("금액은 0보다 커야 합니다");
         return Spending.builder()
                 .userId(userId)
@@ -90,6 +87,7 @@ public class Spending {
                 .amount(amount)
                 .date(date)
                 .memo(memo)
+                .imageUrl(imageUrl)
                 .build();
     }
 }

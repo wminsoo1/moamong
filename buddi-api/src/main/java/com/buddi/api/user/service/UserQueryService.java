@@ -55,4 +55,16 @@ public class UserQueryService {
                 .map(CategoryResponse::from)
                 .collect(Collectors.toList());
     }
+
+    public List<Long> getShareRoomIds(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return user.getShareRoomIds();
+    }
+
+    public List<String> getHiddenCategoryGroups(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return user.getHiddenCategoryGroups();
+    }
 }

@@ -16,4 +16,6 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     @Query("SELECT r FROM Room r JOIN r.members m WHERE m.userId = :userId")
     List<Room> findByUserId(@Param("userId") Long userId);
 
+    @Query("SELECT COUNT(r) > 0 FROM Room r JOIN r.members m1 JOIN r.members m2 WHERE m1.userId = :userId1 AND m2.userId = :userId2")
+    boolean existsSharedRoom(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
 }

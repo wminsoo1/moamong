@@ -25,11 +25,12 @@ public class SharedItemOutboxProcessor {
         if (outbox == null) return;
 
         for (Long roomId : outbox.getRoomIdList()) {
+            if (roomQueryService.isSystemRoom(roomId)) continue;
             for (Long receiverId : roomQueryService.getRoomMemberIds(roomId, outbox.getSenderId())) {
                 if (!notificationSentRepository.existsByOutboxIdAndReceiverId(outboxId, receiverId)) {
                     notificationSentRepository.save(NotificationSent.of(
                             outboxId, outbox.getSenderId(), receiverId,
-                            outbox.getAmount(), outbox.getUrl(), outbox.getTitle()));
+                            outbox.getAmount(), outbox.getUrl(), outbox.getTitle(), outbox.getMemo()));
                 }
             }
         }

@@ -146,6 +146,34 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/me/account-share-settings")
+    public ResponseEntity<Map<String, List<String>>> getAccountShareSettings(Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(Map.of("hiddenCategories", userQueryService.getHiddenCategoryGroups(principal.getUserId())));
+    }
+
+    @PutMapping("/me/account-share-settings")
+    public ResponseEntity<Map<String, List<String>>> updateAccountShareSettings(@RequestBody Map<String, List<String>> body,
+                                                                                  Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        List<String> groups = body.getOrDefault("hiddenCategories", List.of());
+        return ResponseEntity.ok(Map.of("hiddenCategories", userCommandService.updateHiddenCategoryGroups(principal.getUserId(), groups)));
+    }
+
+    @GetMapping("/me/share-settings")
+    public ResponseEntity<Map<String, List<Long>>> getShareSettings(Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(Map.of("roomIds", userQueryService.getShareRoomIds(principal.getUserId())));
+    }
+
+    @PutMapping("/me/share-settings")
+    public ResponseEntity<Map<String, List<Long>>> updateShareSettings(@RequestBody Map<String, List<Long>> body,
+                                                                        Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        List<Long> roomIds = body.getOrDefault("roomIds", List.of());
+        return ResponseEntity.ok(Map.of("roomIds", userCommandService.updateShareRoomIds(principal.getUserId(), roomIds)));
+    }
+
     @DeleteMapping("/me")
     public ResponseEntity<Void> withdraw(Authentication authentication, HttpServletRequest request) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();

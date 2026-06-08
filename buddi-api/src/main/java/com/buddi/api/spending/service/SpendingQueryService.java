@@ -1,5 +1,6 @@
 package com.buddi.api.spending.service;
 
+import com.buddi.api.room.repository.RoomRepository;
 import com.buddi.api.spending.dto.CategoryAmountDto;
 import com.buddi.api.spending.dto.CategoryStatsResponse;
 import com.buddi.api.spending.dto.SpendingListResponse;
@@ -7,9 +8,12 @@ import com.buddi.api.spending.dto.WeeklyAmountDto;
 import com.buddi.api.spending.dto.WeeklyStatsResponse;
 import com.buddi.api.spending.repository.SpendingRepository;
 import com.buddi.api.user.entity.CategoryGroupMeta;
+import com.buddi.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,6 +26,26 @@ import java.util.stream.IntStream;
 public class SpendingQueryService {
 
     private final SpendingRepository spendingRepository;
+    private final RoomRepository roomRepository;
+    private final UserRepository userRepository;
+
+    @Transactional(readOnly = true)
+    public List<SpendingListResponse> getMemberMonthly(Long viewerId, Long targetUserId, int year, int month) {
+        if (!roomRepository.existsSharedRoom(viewerId, targetUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "같은 방에 있지 않습니다");
+        }
+        List<String> hidden = userRepository.findById(targetUserId)
+                .map(u -> u.getHiddenCategoryGroups())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+        return spendingRepository.findByUserIdAndDateBetweenOrderByDateDesc(targetUserId, start, end)
+                .stream()
+                .filter(s -> s.getType() == com.buddi.api.spending.entity.SpendingType.EXPENSE)
+                .filter(s -> !hidden.contains(s.getCategoryGroup()))
+                .map(SpendingListResponse::new)
+                .toList();
+    }
 
     @Transactional(readOnly = true)
     public List<SpendingListResponse> getMonthly(Long userId, int year, int month) {

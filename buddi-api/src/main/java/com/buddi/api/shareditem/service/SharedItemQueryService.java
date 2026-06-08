@@ -6,6 +6,7 @@ import com.buddi.api.shareditem.dto.SharedItemCommentResponse;
 import com.buddi.api.shareditem.dto.SharedItemFeedResponse;
 import com.buddi.api.shareditem.entity.SharedItem;
 import com.buddi.api.shareditem.entity.SharedItemReaction;
+import com.buddi.api.room.service.RoomQueryService;
 import com.buddi.api.shareditem.repository.SharedItemRepository;
 import com.buddi.api.user.entity.User;
 import com.buddi.api.user.service.UserQueryService;
@@ -27,9 +28,11 @@ public class SharedItemQueryService {
 
     private final SharedItemRepository sharedItemRepository;
     private final UserQueryService userQueryService;
+    private final RoomQueryService roomQueryService;
 
     @Transactional(readOnly = true)
     public FeedPageResponse getSharedItemFeed(Long userId, Long roomId, Long cursor, int size) {
+        roomQueryService.validateMember(roomId, userId);
         PageRequest pageable = PageRequest.of(0, size + 1);
         List<SharedItem> items = cursor == null
                 ? sharedItemRepository.findFeedByRoomId(roomId, pageable)
@@ -53,26 +56,16 @@ public class SharedItemQueryService {
     }
 
     @Transactional(readOnly = true)
-    public List<SharedItemFeedResponse> getPublicFeed(Long userId) {
-        List<SharedItem> items = sharedItemRepository.findPublicFeed();
-        if (items.isEmpty()) return List.of();
-
-        List<Long> userIds = items.stream().map(SharedItem::getUserId).distinct().toList();
-        Map<Long, User> userMap = userQueryService.findAllByIds(userIds)
-                .stream().collect(Collectors.toMap(User::getId, u -> u));
-
-        return items.stream()
-                .map(si -> toResponse(userId, si, userMap))
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<SharedItemCommentResponse> getComments(Long sharedItemId) {
+    public List<SharedItemCommentResponse> getComments(Long sharedItemId, Long userId) {
         SharedItem item = sharedItemRepository.findByIdWithComments(sharedItemId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        boolean isMember = item.getRoomShares().stream()
+                .anyMatch(rs -> roomQueryService.isMember(rs.getRoomId(), userId));
+        if (!isMember) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "방 멤버가 아닙니다");
         return item.getComments().stream()
                 .map(c -> new SharedItemCommentResponse(
                         c.getId(),
+                        c.getUserId(),
                         userQueryService.findById(c.getUserId()).getNickname(),
                         c.getContent(),
                         c.getCreatedAt()))
@@ -84,6 +77,8 @@ public class SharedItemQueryService {
         String senderUsername = sender != null ? sender.getNickname() : "알 수 없음";
         return new SharedItemFeedResponse(
                 si.getId(),
+                si.getUserId(),
+                si.getShareGroupId(),
                 senderUsername,
                 si.getAmount(),
                 si.getUrl(),

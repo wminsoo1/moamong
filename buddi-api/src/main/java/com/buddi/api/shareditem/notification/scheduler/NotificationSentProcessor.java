@@ -40,7 +40,7 @@ public class NotificationSentProcessor {
         }
 
         String senderNickname = userQueryService.findById(sent.getSenderId()).getNickname();
-        fcmService.sendHotItemNotification(token, senderNickname, sent.getAmount(), sent.getUrl(), sent.getTitle());
+        fcmService.sendHotItemNotification(token, senderNickname, sent.getAmount(), sent.getUrl(), sent.getTitle(), sent.getMemo());
         sent.markProcessed();
     }
 }

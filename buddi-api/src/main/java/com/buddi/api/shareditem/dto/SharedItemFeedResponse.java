@@ -5,6 +5,8 @@ import java.util.List;
 
 public record SharedItemFeedResponse(
         Long sharedItemId,
+        Long userId,
+        String shareGroupId,
         String senderUsername,
         Long amount,
         String url,

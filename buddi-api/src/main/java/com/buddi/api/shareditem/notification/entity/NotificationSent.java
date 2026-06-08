@@ -37,6 +37,9 @@ public class NotificationSent {
     @Column
     private String title;
 
+    @Column
+    private String memo;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OutboxStatus status;
@@ -68,7 +71,7 @@ public class NotificationSent {
     }
 
     public static NotificationSent of(Long outboxId, Long senderId, Long receiverId,
-                                      long amount, String url, String title) {
+                                      long amount, String url, String title, String memo) {
         NotificationSent sent = new NotificationSent();
         sent.outboxId = outboxId;
         sent.senderId = senderId;
@@ -76,6 +79,7 @@ public class NotificationSent {
         sent.amount = amount;
         sent.url = url;
         sent.title = title;
+        sent.memo = memo;
         return sent;
     }
 }

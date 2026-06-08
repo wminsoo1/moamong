@@ -94,7 +94,6 @@ resource "aws_launch_template" "moamong" {
   }
 
   user_data = base64encode(local.user_data)
-
 }
 
 resource "aws_autoscaling_group" "moamong" {
@@ -117,5 +116,4 @@ resource "aws_autoscaling_group" "moamong" {
     value               = "moamong-api"
     propagate_at_launch = true
   }
-
 }

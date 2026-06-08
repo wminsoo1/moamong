@@ -167,7 +167,7 @@ public class DataInitializer implements CommandLineRunner {
         tfSpendings.stream().filter(s -> s.getAmount() == 55000L).findFirst().ifPresent(s -> {
             SharedItem item = shareSpending(s, tfId, roomIds, "이거 진짜 핵가성비", "https://musinsa.com/item/1001", "무신사 스탠다드 후드집업", "https://image.msscdn.net/images/goods_img/20221031/2909092/2909092_6_500.jpg", SharedItemCategory.FASHION);
             item.toggleReaction(mjId, "❤️");
-            item.toggleReaction(jiId, "🛍️");
+            item.toggleReaction(jiId, "❤️");
         });
         tfSpendings.stream().filter(s -> s.getAmount() == 145000L).findFirst().ifPresent(s -> {
             SharedItem item = shareSpending(s, tfId, roomIds, "나이키 역대급 세일 중", "https://musinsa.com/item/1002", "나이키 에어맥스 270", "https://image.msscdn.net/images/goods_img/20230824/3527587/3527587_6_500.jpg", SharedItemCategory.SPORTS);
@@ -179,11 +179,11 @@ public class DataInitializer implements CommandLineRunner {
         mjSpendings.stream().filter(s -> s.getAmount() == 132000L).findFirst().ifPresent(s -> {
             SharedItem item = shareSpending(s, mjId, roomIds, "완전 핵인싸템 ㅋㅋ", "https://musinsa.com/item/2001", "아크테릭스 자켓", "https://image.msscdn.net/images/goods_img/20240108/3783510/3783510_6_500.jpg", SharedItemCategory.FASHION);
             item.toggleReaction(tfId, "❤️");
-            item.toggleReaction(jiId, "🛍️");
+            item.toggleReaction(jiId, "❤️");
         });
         mjSpendings.stream().filter(s -> s.getAmount() == 245000L).findFirst().ifPresent(s -> {
             SharedItem item = shareSpending(s, mjId, roomIds, "이거 보고 반했음", "https://musinsa.com/item/2002", "우영미 오버핏 셔츠", "https://image.msscdn.net/images/goods_img/20230707/3425393/3425393_6_500.jpg", SharedItemCategory.FASHION);
-            item.toggleReaction(tfId, "🛍️");
+            item.toggleReaction(tfId, "❤️");
             item.toggleReaction(jiId, "❤️");
         });
 
@@ -191,15 +191,15 @@ public class DataInitializer implements CommandLineRunner {
         jiSpendings.stream().filter(s -> s.getAmount() == 89000L).findFirst().ifPresent(s -> {
             SharedItem item = shareSpending(s, jiId, roomIds, "단백질 이거 최고임", "https://coupang.com/item/3001", "머슬팜 단백질 파우더 5kg", "https://thumbnail7.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/2022/08/11/14/5/c8e2a3e2-3b1a-4f6e-8f2a-1e3c4d5e6f7a.jpg", SharedItemCategory.SPORTS);
             item.toggleReaction(tfId, "❤️");
-            item.toggleReaction(mjId, "🛍️");
+            item.toggleReaction(mjId, "❤️");
         });
     }
 
     private SharedItem shareSpending(Spending spending, Long userId, List<Long> roomIds, String memo, String url, String title, String imageUrl, SharedItemCategory category) {
-        spending.markShared();
+        String shareGroupId = java.util.UUID.randomUUID().toString();
         SharedItem first = null;
         for (Long roomId : roomIds) {
-            SharedItem item = SharedItem.of(userId, title, url, imageUrl, memo, category, spending.getId(), spending.getAmount(), false);
+            SharedItem item = SharedItem.of(userId, title, url, imageUrl, memo, category, spending.getId(), spending.getAmount(), false, shareGroupId);
             sharedItemRepository.save(item);
             item.shareToRoom(roomId);
             if (first == null) first = item;
@@ -225,8 +225,7 @@ public class DataInitializer implements CommandLineRunner {
                 Category cat = categories.get(random.nextInt(categories.size()));
                 long amount = (random.nextInt(100) + 1) * 1000L;
                 LocalDate date = startDate.plusDays(random.nextInt(730));
-                spendings.add(Spending.of(user.getId(), SpendingType.EXPENSE,
-                        cat.getName(), cat.getParentGroupKey(), amount, date, null));
+                spendings.add(Spending.of(user.getId(), SpendingType.EXPENSE, cat.getName(), cat.getParentGroupKey(), amount, date, null, null));
             }
             spendingRepository.saveAll(spendings);
         }
@@ -394,6 +393,6 @@ public class DataInitializer implements CommandLineRunner {
                 .filter(c -> c.getName().equals(categoryName) && c.getType() == type && c.getParentGroupKey().equals(groupKey))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("카테고리 없음: [" + groupKey + "] " + categoryName));
-        return Spending.of(user.getId(), type, cat.getName(), cat.getParentGroupKey(), amount, date, memo);
+        return Spending.of(user.getId(), type, cat.getName(), cat.getParentGroupKey(), amount, date, memo, null);
     }
 }

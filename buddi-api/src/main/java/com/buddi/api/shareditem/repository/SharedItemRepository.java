@@ -26,4 +26,12 @@ public interface SharedItemRepository extends JpaRepository<SharedItem, Long> {
 
     @Query("SELECT COUNT(si) FROM SharedItem si JOIN si.roomShares rs WHERE rs.roomId = :roomId AND rs.sharedAt > :since AND si.userId != :userId")
     long countUnreadSharedItems(@Param("roomId") Long roomId, @Param("userId") Long userId, @Param("since") LocalDateTime since);
+
+    List<SharedItem> findAllByUserId(Long userId);
+
+    void deleteAllByUserId(Long userId);
+
+    List<SharedItem> findByShareGroupId(String shareGroupId);
+
+    void deleteByShareGroupId(String shareGroupId);
 }

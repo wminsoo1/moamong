@@ -9,7 +9,6 @@ resource "aws_s3_bucket_versioning" "deploy" {
   }
 }
 
-# 외부 접근 차단 (EC2 IAM Role로만 접근)
 resource "aws_s3_bucket_public_access_block" "deploy" {
   bucket = aws_s3_bucket.deploy.id
 

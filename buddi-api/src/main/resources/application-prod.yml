@@ -7,14 +7,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-  security:
-    oauth2:
-      client:
-        registration:
-          kakao:
-            client-id: ${KAKAO_CLIENT_ID}
-            client-secret: ${KAKAO_CLIENT_SECRET}
-            redirect-uri: ${KAKAO_REDIRECT_URI}
 
-oauth2:
-  redirect-uri: ${OAUTH2_REDIRECT_URI}
+aws:
+  region: ap-northeast-2
+  s3:
+    image-bucket: moamong-images

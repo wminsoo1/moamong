@@ -4,10 +4,13 @@ import com.buddi.api.global.oauth2.UserPrincipal;
 import com.buddi.api.shareditem.dto.FeedPageResponse;
 import com.buddi.api.shareditem.dto.ReactionSummary;
 import com.buddi.api.shareditem.dto.SharedItemCommentResponse;
-import com.buddi.api.shareditem.dto.SharedItemFeedResponse;
+import com.buddi.api.shareditem.dto.SharedItemRequest;
+import com.buddi.api.shareditem.dto.SharedItemResponse;
+import com.buddi.api.shareditem.dto.SharedItemUpdateRequest;
 import com.buddi.api.shareditem.entity.SharedItemCategory;
 import com.buddi.api.shareditem.service.SharedItemCommandService;
 import com.buddi.api.shareditem.service.SharedItemQueryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +28,18 @@ public class SharedItemController {
 
     private final SharedItemQueryService sharedItemQueryService;
     private final SharedItemCommandService sharedItemCommandService;
+
+    @PostMapping
+    public ResponseEntity<List<SharedItemResponse>> create(
+            @Valid @RequestBody SharedItemRequest request,
+            Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(sharedItemCommandService.create(
+                principal.getUserId(),
+                request.url(), request.title(), request.imageUrl(),
+                request.review(), request.category(), request.amount(),
+                request.roomIds(), request.isPublic()));
+    }
 
     @GetMapping("/categories")
     public ResponseEntity<List<Map<String, String>>> getCategories() {
@@ -44,12 +59,6 @@ public class SharedItemController {
         return ResponseEntity.ok(sharedItemQueryService.getSharedItemFeed(principal.getUserId(), roomId, cursor, size));
     }
 
-    @GetMapping("/public")
-    public ResponseEntity<List<SharedItemFeedResponse>> getPublicFeed(Authentication authentication) {
-        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        return ResponseEntity.ok(sharedItemQueryService.getPublicFeed(principal.getUserId()));
-    }
-
     @PostMapping("/{sharedItemId}/reactions")
     public ResponseEntity<List<ReactionSummary>> toggleReaction(
             @PathVariable Long sharedItemId,
@@ -65,8 +74,11 @@ public class SharedItemController {
     }
 
     @GetMapping("/{sharedItemId}/comments")
-    public ResponseEntity<List<SharedItemCommentResponse>> getComments(@PathVariable Long sharedItemId) {
-        return ResponseEntity.ok(sharedItemQueryService.getComments(sharedItemId));
+    public ResponseEntity<List<SharedItemCommentResponse>> getComments(
+            @PathVariable Long sharedItemId,
+            Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(sharedItemQueryService.getComments(sharedItemId, principal.getUserId()));
     }
 
     @PostMapping("/{sharedItemId}/comments")
@@ -81,6 +93,36 @@ public class SharedItemController {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         return ResponseEntity.ok(sharedItemCommandService.addComment(
                 principal.getUserId(), sharedItemId, content));
+    }
+
+    @PutMapping("/{sharedItemId}")
+    public ResponseEntity<Void> update(
+            @PathVariable Long sharedItemId,
+            @Valid @RequestBody SharedItemUpdateRequest request,
+            Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        sharedItemCommandService.update(sharedItemId, principal.getUserId(),
+                request.title(), request.url(), request.imageUrl(),
+                request.memo(), request.category(), request.amount());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{sharedItemId}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long sharedItemId,
+            Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        sharedItemCommandService.delete(sharedItemId, principal.getUserId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    public ResponseEntity<Void> deleteComment(
+            @PathVariable Long commentId,
+            Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        sharedItemCommandService.deleteComment(commentId, principal.getUserId());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{sharedItemId}/view")

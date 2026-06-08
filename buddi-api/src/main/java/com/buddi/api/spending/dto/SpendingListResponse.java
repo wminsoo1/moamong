@@ -17,7 +17,7 @@ public class SpendingListResponse {
     private final Long amount;
     private final LocalDate date;
     private final String memo;
-    private final boolean shared;
+    private final String imageUrl;
     private final LocalDateTime createdAt;
 
     public SpendingListResponse(Spending spending) {
@@ -29,7 +29,7 @@ public class SpendingListResponse {
         this.amount = spending.getAmount();
         this.date = spending.getDate();
         this.memo = spending.getMemo();
-        this.shared = spending.isShared();
+        this.imageUrl = spending.getImageUrl();
         this.createdAt = spending.getCreatedAt();
     }
 }

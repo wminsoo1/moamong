@@ -1,5 +1,6 @@
 package com.buddi.api.spending.service;
 
+import com.buddi.api.global.s3.PresignedUrlService;
 import com.buddi.api.shareditem.dto.SharedItemResponse;
 import com.buddi.api.shareditem.service.SharedItemCommandService;
 import com.buddi.api.spending.dto.SpendingRequest;
@@ -26,13 +27,14 @@ public class SpendingCommandService {
     private final SpendingRepository spendingRepository;
     private final UserRepository userRepository;
     private final SharedItemCommandService sharedItemCommandService;
+    private final PresignedUrlService presignedUrlService;
 
     @Transactional
     public SpendingResponse create(Long userId, SpendingRequest request) {
         String[] nameAndGroup = resolveCategoryNameAndGroup(userId, request);
         Spending spending = Spending.of(userId, request.getType(),
                 nameAndGroup[0], nameAndGroup[1],
-                request.getAmount(), request.getDate(), request.getMemo());
+                request.getAmount(), request.getDate(), request.getMemo(), request.getImageUrl());
         spendingRepository.save(spending);
         return new SpendingResponse(spending);
     }
@@ -40,9 +42,14 @@ public class SpendingCommandService {
     @Transactional
     public SpendingResponse update(Long userId, Long spendingId, SpendingRequest request) {
         Spending spending = getOwnedSpending(userId, spendingId);
+        String oldImageUrl = spending.getImageUrl();
+        String newImageUrl = request.getImageUrl();
         String[] nameAndGroup = resolveCategoryNameAndGroup(userId, request);
         spending.update(request.getType(), nameAndGroup[0], nameAndGroup[1],
-                request.getAmount(), request.getDate(), request.getMemo());
+                request.getAmount(), request.getDate(), request.getMemo(), newImageUrl);
+        if (oldImageUrl != null && !oldImageUrl.equals(newImageUrl)) {
+            presignedUrlService.deleteByUrl(oldImageUrl);
+        }
         return new SpendingResponse(spending);
     }
 
@@ -63,7 +70,6 @@ public class SpendingCommandService {
                                                       String url, String title, String imageUrl, String memo,
                                                       SharedItemCategory category, boolean isPublic) {
         Spending spending = getOwnedSpending(userId, spendingId);
-        spending.markShared();
         return sharedItemCommandService.createFromSpending(
                 userId, spendingId, spending.getAmount(), url, title, imageUrl, memo, category, roomIds, isPublic);
     }
@@ -71,6 +77,7 @@ public class SpendingCommandService {
     @Transactional
     public void delete(Long userId, Long spendingId) {
         Spending spending = getOwnedSpending(userId, spendingId);
+        presignedUrlService.deleteByUrl(spending.getImageUrl());
         spendingRepository.delete(spending);
     }
 

@@ -16,6 +16,8 @@ public class SpendingResponse {
     private final String categoryGroupLabel;
     private final Long amount;
     private final LocalDate date;
+    private final String memo;
+    private final String imageUrl;
     private final LocalDateTime createdAt;
 
     public SpendingResponse(Spending spending) {
@@ -26,6 +28,8 @@ public class SpendingResponse {
         this.categoryGroupLabel = CategoryGroupMeta.labelOf(spending.getCategoryGroup());
         this.amount = spending.getAmount();
         this.date = spending.getDate();
+        this.memo = spending.getMemo();
+        this.imageUrl = spending.getImageUrl();
         this.createdAt = spending.getCreatedAt();
     }
 }
