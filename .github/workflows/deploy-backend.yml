@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'buddi-api/**'
+      - '.github/workflows/deploy-backend.yml'
 
 permissions:
   id-token: write   # OIDC 토큰 발급 필요
