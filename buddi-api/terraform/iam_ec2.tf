@@ -40,6 +40,11 @@ resource "aws_iam_role_policy" "ec2_policy" {
   })
 }
 
+resource "aws_iam_role_policy_attachment" "ec2_ssm" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "moamong-ec2-profile"
   role = aws_iam_role.ec2_role.name
