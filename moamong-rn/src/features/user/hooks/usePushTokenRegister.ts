@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import * as Notifications from "expo-notifications";
-import { Platform, Linking } from "react-native";
+import { Platform, Linking, AppState } from "react-native";
 import "@react-native-firebase/app";
 import messaging from "@react-native-firebase/messaging";
 import { useRegisterPushToken } from "../mutations/useRegisterPushToken";
@@ -23,6 +23,7 @@ function openNotificationUrl(url: string | undefined) {
 
 export function usePushTokenRegister() {
   const registerPushToken = useRegisterPushToken();
+  const appState = useRef(AppState.currentState);
 
   useEffect(() => {
     let unsubRefresh: (() => void) | undefined;
@@ -58,9 +59,17 @@ export function usePushTokenRegister() {
 
     init();
 
+    const unsubAppState = AppState.addEventListener("change", (nextState) => {
+      if (appState.current !== "active" && nextState === "active") {
+        registerToken();
+      }
+      appState.current = nextState;
+    });
+
     return () => {
       unsubRefresh?.();
       unsubOpen?.();
+      unsubAppState.remove();
     };
   }, []);
 
