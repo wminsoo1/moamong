@@ -165,31 +165,31 @@ public class DataInitializer implements CommandLineRunner {
 
         List<Spending> tfSpendings = spendingRepository.findByUserIdAndDateBetweenOrderByDateDesc(tfId, start, end);
         tfSpendings.stream().filter(s -> s.getAmount() == 55000L).findFirst().ifPresent(s -> {
-            SharedItem item = shareSpending(s, tfId, roomIds, "이거 진짜 핵가성비", "https://musinsa.com/item/1001", "무신사 스탠다드 후드집업", "https://image.msscdn.net/images/goods_img/20221031/2909092/2909092_6_500.jpg", SharedItemCategory.FASHION);
+            SharedItem item = shareSpending(s, tfId, roomIds, "이거 진짜 핵가성비", "https://musinsa.com/item/1001", "무신사 스탠다드 후드집업", "https://image.msscdn.net/images/goods_img/20221031/2909092/2909092_6_500.jpg", SharedItemCategory.BEAUTY);
             item.toggleReaction(mjId, "❤️");
             item.toggleReaction(jiId, "❤️");
         });
         tfSpendings.stream().filter(s -> s.getAmount() == 145000L).findFirst().ifPresent(s -> {
-            SharedItem item = shareSpending(s, tfId, roomIds, "나이키 역대급 세일 중", "https://musinsa.com/item/1002", "나이키 에어맥스 270", "https://image.msscdn.net/images/goods_img/20230824/3527587/3527587_6_500.jpg", SharedItemCategory.SPORTS);
+            SharedItem item = shareSpending(s, tfId, roomIds, "나이키 역대급 세일 중", "https://musinsa.com/item/1002", "나이키 에어맥스 270", "https://image.msscdn.net/images/goods_img/20230824/3527587/3527587_6_500.jpg", SharedItemCategory.ETC);
             item.toggleReaction(mjId, "❤️");
             item.toggleReaction(jiId, "❤️");
         });
 
         List<Spending> mjSpendings = spendingRepository.findByUserIdAndDateBetweenOrderByDateDesc(mjId, start, end);
         mjSpendings.stream().filter(s -> s.getAmount() == 132000L).findFirst().ifPresent(s -> {
-            SharedItem item = shareSpending(s, mjId, roomIds, "완전 핵인싸템 ㅋㅋ", "https://musinsa.com/item/2001", "아크테릭스 자켓", "https://image.msscdn.net/images/goods_img/20240108/3783510/3783510_6_500.jpg", SharedItemCategory.FASHION);
+            SharedItem item = shareSpending(s, mjId, roomIds, "완전 핵인싸템 ㅋㅋ", "https://musinsa.com/item/2001", "아크테릭스 자켓", "https://image.msscdn.net/images/goods_img/20240108/3783510/3783510_6_500.jpg", SharedItemCategory.BEAUTY);
             item.toggleReaction(tfId, "❤️");
             item.toggleReaction(jiId, "❤️");
         });
         mjSpendings.stream().filter(s -> s.getAmount() == 245000L).findFirst().ifPresent(s -> {
-            SharedItem item = shareSpending(s, mjId, roomIds, "이거 보고 반했음", "https://musinsa.com/item/2002", "우영미 오버핏 셔츠", "https://image.msscdn.net/images/goods_img/20230707/3425393/3425393_6_500.jpg", SharedItemCategory.FASHION);
+            SharedItem item = shareSpending(s, mjId, roomIds, "이거 보고 반했음", "https://musinsa.com/item/2002", "우영미 오버핏 셔츠", "https://image.msscdn.net/images/goods_img/20230707/3425393/3425393_6_500.jpg", SharedItemCategory.BEAUTY);
             item.toggleReaction(tfId, "❤️");
             item.toggleReaction(jiId, "❤️");
         });
 
         List<Spending> jiSpendings = spendingRepository.findByUserIdAndDateBetweenOrderByDateDesc(jiId, start, end);
         jiSpendings.stream().filter(s -> s.getAmount() == 89000L).findFirst().ifPresent(s -> {
-            SharedItem item = shareSpending(s, jiId, roomIds, "단백질 이거 최고임", "https://coupang.com/item/3001", "머슬팜 단백질 파우더 5kg", "https://thumbnail7.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/2022/08/11/14/5/c8e2a3e2-3b1a-4f6e-8f2a-1e3c4d5e6f7a.jpg", SharedItemCategory.SPORTS);
+            SharedItem item = shareSpending(s, jiId, roomIds, "단백질 이거 최고임", "https://coupang.com/item/3001", "머슬팜 단백질 파우더 5kg", "https://thumbnail7.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/2022/08/11/14/5/c8e2a3e2-3b1a-4f6e-8f2a-1e3c4d5e6f7a.jpg", SharedItemCategory.FOOD);
             item.toggleReaction(tfId, "❤️");
             item.toggleReaction(mjId, "❤️");
         });
