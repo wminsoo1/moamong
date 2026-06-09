@@ -87,7 +87,7 @@ public class SharedItemCommandService {
         var comment = item.addComment(userId, content);
         return new SharedItemCommentResponse(comment.getId(),
                 userId,
-                userQueryService.findById(userId).getNickname(),
+                userQueryService.findById(userId).getUsername(),
                 comment.getContent(), comment.getCreatedAt());
     }
 
