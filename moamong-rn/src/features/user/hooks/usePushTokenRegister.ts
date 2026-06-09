@@ -24,6 +24,7 @@ function openNotificationUrl(url: string | undefined) {
 export function usePushTokenRegister() {
   const registerPushToken = useRegisterPushToken();
   const appState = useRef(AppState.currentState);
+  const registeredToken = useRef<string | null>(null);
 
   useEffect(() => {
     let unsubRefresh: (() => void) | undefined;
@@ -88,8 +89,12 @@ export function usePushTokenRegister() {
       }
 
       const fcmToken = await messaging().getToken();
+      if (fcmToken === registeredToken.current) return;
       registerPushToken.mutate(fcmToken, {
-        onSuccess: () => console.log("[FCM] 토큰 등록 성공"),
+        onSuccess: () => {
+          registeredToken.current = fcmToken;
+          console.log("[FCM] 토큰 등록 성공");
+        },
         onError: (e) => console.warn("[FCM] 토큰 등록 실패", e),
       });
     } catch (e) {
