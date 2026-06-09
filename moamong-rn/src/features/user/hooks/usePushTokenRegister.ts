@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
 import { Platform, Linking } from "react-native";
+import "@react-native-firebase/app";
 import messaging from "@react-native-firebase/messaging";
 import { useRegisterPushToken } from "../mutations/useRegisterPushToken";
 
@@ -24,30 +25,42 @@ export function usePushTokenRegister() {
   const registerPushToken = useRegisterPushToken();
 
   useEffect(() => {
-    registerToken();
+    let unsubRefresh: (() => void) | undefined;
+    let unsubOpen: (() => void) | undefined;
 
-    // 토큰이 갱신될 때마다 서버에 재등록
-    const unsubRefresh = messaging().onTokenRefresh((newToken) => {
-      registerPushToken.mutate(newToken, {
-        onError: (e) => console.warn("[FCM] 토큰 갱신 등록 실패", e),
-      });
-    });
+    const init = (retryCount = 0) => {
+      try {
+        registerToken();
 
-    // 앱이 백그라운드에 있을 때 알림 탭
-    const unsubOpen = messaging().onNotificationOpenedApp((remoteMessage) => {
-      openNotificationUrl(remoteMessage.data?.url as string | undefined);
-    });
+        unsubRefresh = messaging().onTokenRefresh((newToken) => {
+          registerPushToken.mutate(newToken, {
+            onError: (e) => console.warn("[FCM] 토큰 갱신 등록 실패", e),
+          });
+        });
 
-    // 앱이 완전히 종료된 상태에서 알림 탭으로 앱 시작
-    messaging().getInitialNotification().then((remoteMessage) => {
-      if (remoteMessage) {
-        openNotificationUrl(remoteMessage.data?.url as string | undefined);
+        unsubOpen = messaging().onNotificationOpenedApp((remoteMessage) => {
+          openNotificationUrl(remoteMessage.data?.url as string | undefined);
+        });
+
+        messaging().getInitialNotification().then((remoteMessage) => {
+          if (remoteMessage) {
+            openNotificationUrl(remoteMessage.data?.url as string | undefined);
+          }
+        });
+      } catch (e) {
+        if (retryCount < 3) {
+          setTimeout(() => init(retryCount + 1), 1000 * (retryCount + 1));
+        } else {
+          console.warn("[FCM] Firebase 초기화 실패", e);
+        }
       }
-    });
+    };
+
+    init();
 
     return () => {
-      unsubRefresh();
-      unsubOpen();
+      unsubRefresh?.();
+      unsubOpen?.();
     };
   }, []);
 
