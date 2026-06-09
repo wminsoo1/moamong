@@ -74,14 +74,9 @@ export function usePushTokenRegister() {
       }
 
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-
       if (existingStatus !== "granted") {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
+        await Notifications.requestPermissionsAsync();
       }
-
-      if (finalStatus !== "granted") return;
 
       const fcmToken = await messaging().getToken();
       registerPushToken.mutate(fcmToken, {
