@@ -54,7 +54,7 @@ export default function FeedScreen() {
   const recordView = useRecordView();
   const markRoomRead = useMarkRoomRead();
   const deleteSharedItem = useDeleteSharedItem();
-  const deleteComment = useDeleteComment();
+  const deleteComment = useDeleteComment(openComments ?? 0);
   const { user: me } = useCurrentUser();
 
   let filteredFeed = feedItems || [];

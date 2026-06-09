@@ -58,7 +58,7 @@ public class RoomQueryService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         List<Long> userIds = room.getMembers().stream().map(m -> m.getUserId()).toList();
         return userQueryService.findAllByIds(userIds).stream()
-                .map(u -> new RoomMemberResponse(u.getId(), u.getNickname()))
+                .map(u -> new RoomMemberResponse(u.getId(), u.getUsername()))
                 .toList();
     }
 
