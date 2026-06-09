@@ -45,6 +45,7 @@
       "expo-status-bar",
       "expo-web-browser",
       "expo-apple-authentication",
+      "@react-native-firebase/app",
       [
         "expo-notifications",
         {

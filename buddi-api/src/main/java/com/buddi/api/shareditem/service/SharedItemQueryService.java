@@ -66,7 +66,7 @@ public class SharedItemQueryService {
                 .map(c -> new SharedItemCommentResponse(
                         c.getId(),
                         c.getUserId(),
-                        userQueryService.findById(c.getUserId()).getNickname(),
+                        userQueryService.findById(c.getUserId()).getUsername(),
                         c.getContent(),
                         c.getCreatedAt()))
                 .toList();
@@ -74,7 +74,7 @@ public class SharedItemQueryService {
 
     private SharedItemFeedResponse toResponse(Long userId, SharedItem si, Map<Long, User> userMap) {
         User sender = userMap.get(si.getUserId());
-        String senderUsername = sender != null ? sender.getNickname() : "알 수 없음";
+        String senderUsername = sender != null ? sender.getUsername() : "알 수 없음";
         return new SharedItemFeedResponse(
                 si.getId(),
                 si.getUserId(),

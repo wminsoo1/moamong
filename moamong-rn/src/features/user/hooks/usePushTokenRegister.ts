@@ -98,7 +98,7 @@ export function usePushTokenRegister() {
         onError: (e) => console.warn("[FCM] 토큰 등록 실패", e),
       });
     } catch (e) {
-      console.log("[FCM] 토큰 획득 실패 (시뮬레이터)", e);
+      console.log("[FCM] 토큰 획득 실패", e);
     }
   }
 }
