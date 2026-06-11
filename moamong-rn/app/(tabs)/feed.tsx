@@ -36,6 +36,7 @@ export default function FeedScreen() {
   const [commentText, setCommentText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
+  const [commentCountOverrides, setCommentCountOverrides] = useState<Record<number, number>>({});
 
   const { rooms } = useRooms();
 
@@ -49,6 +50,11 @@ export default function FeedScreen() {
   }, [rooms]);
   const { feedItems = [], fetchNextPage, hasNextPage, isFetchingNextPage } = useFeed(rooms, selectedRoomId);
   const { comments } = useComments(openComments, selectedRoomId);
+
+  useEffect(() => {
+    if (openComments == null) return;
+    setCommentCountOverrides(prev => ({ ...prev, [openComments]: comments.length }));
+  }, [openComments, comments]);
   const addComment = useAddComment();
   const toggleReaction = useToggleReaction();
   const recordView = useRecordView();
@@ -72,9 +78,12 @@ export default function FeedScreen() {
 
   const renderItem = ({ item }: { item: FeedItem }) => {
     if (!item?.sharedItemId) return null;
+    const displayItem = commentCountOverrides[item.sharedItemId] != null
+      ? { ...item, commentCount: commentCountOverrides[item.sharedItemId] }
+      : item;
     return (
     <FeedCard
-      item={item}
+      item={displayItem}
       isOpen={openComments === item.sharedItemId}
       onToggle={() => {
         if (openComments === item.sharedItemId) {
