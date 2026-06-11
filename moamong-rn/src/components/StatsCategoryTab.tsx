@@ -105,6 +105,18 @@ export function StatsCategoryTab({ categoryStats, spendings, isLoading, panHandl
                       </View>
                       <Text style={styles.catPercent}>{Math.round(item.percentage)}%</Text>
                     </View>
+                    {item.lastMonthAmount > 0 && (() => {
+                      const diff = item.amount - item.lastMonthAmount;
+                      if (diff === 0) return null;
+                      const isOver = diff > 0;
+                      return (
+                        <View style={[styles.diffChip, { backgroundColor: isOver ? "#fff0f1" : "#f0f6ff" }]}>
+                          <Text style={[styles.catDiff, { color: isOver ? "#f04452" : "#3182f6" }]}>
+                            {isOver ? "▲" : "▼"} 지난달보다 {Math.abs(diff).toLocaleString()}원 {isOver ? "더" : "덜"} 씀
+                          </Text>
+                        </View>
+                      );
+                    })()}
                   </View>
                 </Pressable>
 
@@ -139,7 +151,7 @@ export function StatsCategoryTab({ categoryStats, spendings, isLoading, panHandl
 }
 
 const styles = StyleSheet.create({
-  contentSection: { paddingHorizontal: 20, paddingTop: 32, gap: 32 },
+  contentSection: { paddingHorizontal: 20, paddingTop: 16, gap: 16 },
   fullLoadingContainer: { height: 400, alignItems: "center", justifyContent: "center", gap: 12 },
   loadingText: { fontSize: 14, color: "#adb5bd", fontWeight: "600", marginTop: 16 },
   chartFlat: { alignItems: "center", paddingVertical: 8 },
@@ -161,6 +173,8 @@ const styles = StyleSheet.create({
   catProgressBarBg: { flex: 1, height: 6, backgroundColor: "#f2f4f6", borderRadius: 3, overflow: "hidden" },
   catProgressBarFill: { height: "100%", borderRadius: 3 },
   catPercent: { fontSize: 12, fontWeight: "700", color: "#8b95a1", width: 32, textAlign: "right" },
+  diffChip: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  catDiff: { fontSize: 11, fontWeight: "700" },
   tossList: { paddingVertical: 8 },
   tossListRow: { flexDirection: "row", alignItems: "center", gap: 16, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#f2f4f6" },
   tossListInfo: { flex: 1, gap: 2 },

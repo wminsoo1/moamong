@@ -153,7 +153,7 @@ export function StatsWeeklyTab({ weeklyStats, spendings, expandedWeek, onExpandW
 }
 
 const styles = StyleSheet.create({
-  contentSection: { paddingHorizontal: 20, paddingTop: 32, gap: 32 },
+  contentSection: { paddingHorizontal: 20, paddingTop: 16, gap: 32 },
   chartSection: { paddingHorizontal: 4 },
   chartHeader: { marginBottom: 32 },
   cardTitle: { fontSize: 18, fontWeight: "800", color: "#191f28" },

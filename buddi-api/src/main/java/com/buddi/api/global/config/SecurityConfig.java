@@ -34,7 +34,8 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
-                        .requestMatchers("/api/auth/kakao", "/api/auth/apple", "/api/og").permitAll()
+                        .requestMatchers("/api/auth/kakao", "/api/auth/apple").permitAll()
+                        .requestMatchers("/debug/**").permitAll()
                         .anyRequest().authenticated()
                 );
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, Text, Pressable, TextInput, Image, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, Pressable, TextInput, Image, ActivityIndicator, StyleSheet, ActionSheetIOS } from "react-native";
 import { router } from "expo-router";
 import { Plus, Camera, X } from "lucide-react-native";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
@@ -20,6 +20,7 @@ interface Props {
   onChangeCategoryId: (id: number | null) => void;
   onChangeGroupKey?: (groupKey: CategoryGroup | null) => void;
   onPickImage?: () => void;
+  onPickCamera?: () => void;
   onRemoveImage?: () => void;
 }
 
@@ -27,7 +28,7 @@ export function ExpenseFormFields({
   expType, expAmount, expMemo, expCategoryId, userCategories,
   imageUri, uploading,
   onChangeType, onChangeAmount, onChangeMemo, onChangeCategoryId, onChangeGroupKey,
-  onPickImage, onRemoveImage,
+  onPickImage, onPickCamera, onRemoveImage,
 }: Props) {
   const expAmountDisplay = expAmount ? parseInt(expAmount, 10).toLocaleString() : "";
   const typeStr = expType === "지출" ? "EXPENSE" : "INCOME";
@@ -119,7 +120,15 @@ export function ExpenseFormFields({
             </View>
           ) : (
             <Pressable
-              onPress={onPickImage}
+              onPress={() => {
+                ActionSheetIOS.showActionSheetWithOptions(
+                  { options: ["취소", "갤러리에서 선택", "카메라로 찍기"], cancelButtonIndex: 0 },
+                  (idx) => {
+                    if (idx === 1) onPickImage?.();
+                    if (idx === 2) onPickCamera?.();
+                  }
+                );
+              }}
               style={({ pressed }) => [styles.imagePickerBtn, pressed && { opacity: 0.6 }]}
             >
               <Camera size={18} color="#8b95a1" />

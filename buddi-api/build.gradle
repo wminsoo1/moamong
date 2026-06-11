@@ -33,9 +33,7 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 
 	implementation 'com.google.firebase:firebase-admin:9.2.0'
-	implementation 'org.jsoup:jsoup:1.17.2'
-
-	implementation platform('software.amazon.awssdk:bom:2.25.0')
+implementation platform('software.amazon.awssdk:bom:2.25.0')
 	implementation 'software.amazon.awssdk:s3'
 
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'

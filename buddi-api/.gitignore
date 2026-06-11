@@ -39,3 +39,6 @@ out/
 ### Secrets ###
 src/main/resources/firebase-service-account.json
 app.env
+
+# 로컬 개발용 설정 (커밋 금지)
+src/main/resources/application-dev.yml

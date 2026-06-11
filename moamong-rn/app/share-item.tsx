@@ -17,7 +17,7 @@ type CategoryEnum = SystemCategoryKey;
 
 export default function ShareItemScreen() {
   const { shareUrl: initialUrl } = useLocalSearchParams<{ shareUrl?: string }>();
-const { data: shareSettings } = useShareSettings();
+const { data: shareSettings, isLoading: settingsLoading } = useShareSettings();
   const shareHotItem = useShareHotItem();
 
   const resolvedInitialUrl = useInitialShareUrl(initialUrl);
@@ -102,8 +102,13 @@ const { data: shareSettings } = useShareSettings();
       </KeyboardAvoidingView>
 
       <View style={styles.footer}>
+        {!settingsLoading && shareRoomIds.length === 0 && (
+          <Pressable onPress={() => router.push("/share-settings")} style={styles.noRoomBanner}>
+            <Text style={styles.noRoomText}>공유할 방을 설정해주세요 →</Text>
+          </Pressable>
+        )}
         <Pressable
-          disabled={!shareUrl || shareHotItem.isPending}
+          disabled={!shareUrl || shareRoomIds.length === 0 || settingsLoading || shareHotItem.isPending}
           onPress={() =>
             shareHotItem.mutate(
               {
@@ -149,6 +154,8 @@ const styles = StyleSheet.create({
   catChip: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, gap: 6 },
   catChipText: { fontSize: 14, fontWeight: "600" },
   footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20, borderTopWidth: 1, borderTopColor: "#f2f4f6" },
+  noRoomBanner: { marginBottom: 8, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: "#fff8e6", borderRadius: 10 },
+  noRoomText: { fontSize: 13, fontWeight: "600", color: "#f59e0b", textAlign: "center" },
   primaryBtn: { height: 52, borderRadius: 16, backgroundColor: "#3182f6", alignItems: "center", justifyContent: "center" },
   primaryBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   btnDisabled: { opacity: 0.3 },

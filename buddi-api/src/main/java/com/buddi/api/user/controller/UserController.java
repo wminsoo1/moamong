@@ -1,6 +1,7 @@
 package com.buddi.api.user.controller;
 
 import com.buddi.api.global.oauth2.UserPrincipal;
+import com.buddi.api.room.service.RoomQueryService;
 import com.buddi.api.spending.entity.SpendingType;
 import com.buddi.api.user.dto.CategoryGroupResponse;
 import com.buddi.api.user.dto.CategoryGroupStyleRequest;
@@ -30,6 +31,7 @@ public class UserController {
 
     private final UserQueryService userQueryService;
     private final UserCommandService userCommandService;
+    private final RoomQueryService roomQueryService;
 
     @GetMapping("/me/category-groups")
     public ResponseEntity<List<CategoryGroupResponse>> getCategoryGroups(Authentication authentication) {
@@ -163,7 +165,11 @@ public class UserController {
     @GetMapping("/me/share-settings")
     public ResponseEntity<Map<String, List<Long>>> getShareSettings(Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        return ResponseEntity.ok(Map.of("roomIds", userQueryService.getShareRoomIds(principal.getUserId())));
+        List<Long> savedIds = userQueryService.getShareRoomIds(principal.getUserId());
+        List<Long> myRoomIds = roomQueryService.getMyRooms(principal.getUserId())
+                .stream().map(r -> r.id()).toList();
+        List<Long> validIds = savedIds.stream().filter(myRoomIds::contains).toList();
+        return ResponseEntity.ok(Map.of("roomIds", validIds));
     }
 
     @PutMapping("/me/share-settings")

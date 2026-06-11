@@ -25,7 +25,7 @@ export default function AddExpenseScreen() {
 
   const { userCategories } = useUserCategories();
   const createSpending = useCreateSpending();
-  const { imageUri, imageUrl, uploading, pick, remove } = useImageUpload();
+  const { imageUri, imageUrl, uploading, pick, pickFromCamera, remove } = useImageUpload();
 
   const canSubmit = expAmount !== "" && parseInt(expAmount, 10) > 0 && (expCategoryId !== null || expGroupKey !== null) && !uploading;
 
@@ -72,6 +72,7 @@ export default function AddExpenseScreen() {
             onChangeCategoryId={setExpCategoryId}
             onChangeGroupKey={setExpGroupKey}
             onPickImage={pick}
+            onPickCamera={pickFromCamera}
             onRemoveImage={remove}
           />
         </ScrollView>

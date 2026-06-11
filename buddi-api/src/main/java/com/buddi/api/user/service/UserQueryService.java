@@ -8,6 +8,7 @@ import com.buddi.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
@@ -20,23 +21,28 @@ public class UserQueryService {
 
     private final UserRepository userRepository;
 
+    @Transactional(readOnly = true)
     public User findById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
+    @Transactional(readOnly = true)
     public List<User> findAllByIds(List<Long> userIds) {
         return userRepository.findAllById(userIds);
     }
 
+    @Transactional(readOnly = true)
     public boolean isUsernameAvailable(String username) {
         return !userRepository.existsByUsername(username);
     }
 
+    @Transactional(readOnly = true)
     public String getFcmToken(Long userId) {
         return userRepository.findById(userId).map(User::getFcmToken).orElse(null);
     }
 
+    @Transactional(readOnly = true)
     public List<CategoryGroupResponse> getCategoryGroups(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -46,6 +52,7 @@ public class UserQueryService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<CategoryResponse> getCategories(Long userId, SpendingType type) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -56,12 +63,14 @@ public class UserQueryService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<Long> getShareRoomIds(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return user.getShareRoomIds();
     }
 
+    @Transactional(readOnly = true)
     public List<String> getHiddenCategoryGroups(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));

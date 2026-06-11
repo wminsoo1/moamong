@@ -18,7 +18,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleResponseStatus(ResponseStatusException e) {
         String message = e.getReason() != null ? e.getReason() : "요청에 실패했습니다.";
         if (e.getStatusCode().is5xxServerError()) {
-            log.error("Server error: {}", message, e);
+            log.error("Server error [{}]: {}", e.getStatusCode().value(), message, e);
+        } else {
+            log.warn("Client error [{}]: {}", e.getStatusCode().value(), message);
         }
         return ResponseEntity.status(e.getStatusCode()).body(Map.of("message", message));
     }

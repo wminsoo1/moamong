@@ -29,7 +29,7 @@ export default function EditExpenseScreen() {
   );
 
   const { userCategories } = useUserCategories();
-  const { imageUri, imageUrl, uploading, pick, remove } = useImageUpload(initialExpense?.imageUrl);
+  const { imageUri, imageUrl, uploading, pick, pickFromCamera, remove } = useImageUpload(initialExpense?.imageUrl);
 
   useEffect(() => {
     if (userCategories.length === 0 || !initialExpense) return;
@@ -113,6 +113,7 @@ export default function EditExpenseScreen() {
             onChangeCategoryId={setExpCategoryId}
             onChangeGroupKey={(g) => setExpGroupKey(g)}
             onPickImage={pick}
+            onPickCamera={pickFromCamera}
             onRemoveImage={remove}
           />
         </ScrollView>
