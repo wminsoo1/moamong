@@ -89,7 +89,7 @@ public class SharedItemCommandService {
         return new SharedItemCommentResponse(comment.getId(),
                 userId,
                 userQueryService.findById(userId).getUsername(),
-                comment.getContent(), comment.getCreatedAt().atOffset(ZoneOffset.ofHours(9)));
+                comment.getContent(), comment.getCreatedAt().atOffset(ZoneOffset.UTC).withOffsetSameInstant(ZoneOffset.ofHours(9)));
     }
 
     @Transactional

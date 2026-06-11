@@ -33,6 +33,6 @@ public class RecurringSpendingResponse {
         this.startDate = r.getStartDate();
         this.endDate = r.getEndDate();
         this.memo = r.getMemo();
-        this.createdAt = r.getCreatedAt().atOffset(ZoneOffset.ofHours(9));
+        this.createdAt = r.getCreatedAt().atOffset(ZoneOffset.UTC).withOffsetSameInstant(ZoneOffset.ofHours(9));
     }
 }

@@ -69,7 +69,7 @@ public class SharedItemQueryService {
                         c.getUserId(),
                         userQueryService.findById(c.getUserId()).getUsername(),
                         c.getContent(),
-                        c.getCreatedAt().atOffset(ZoneOffset.ofHours(9))))
+                        c.getCreatedAt().atOffset(ZoneOffset.UTC).withOffsetSameInstant(ZoneOffset.ofHours(9))))
                 .toList();
     }
 
@@ -87,7 +87,7 @@ public class SharedItemQueryService {
                 si.getImageUrl(),
                 si.getMemo(),
                 si.getCategory().name(),
-                si.getCreatedAt().atOffset(ZoneOffset.ofHours(9)),
+                si.getCreatedAt().atOffset(ZoneOffset.UTC).withOffsetSameInstant(ZoneOffset.ofHours(9)),
                 buildReactionSummaries(userId, si.getReactions()),
                 si.getComments().size(),
                 si.getViewCount()
