@@ -35,7 +35,7 @@ const OG_OBSERVE_SCRIPT = `
       if (img) { send(title, img); observer.disconnect(); }
     });
     observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['content'] });
-    setTimeout(() => { const { title, img } = get(); send(title, img); observer.disconnect(); }, 5000);
+    setTimeout(() => { const { title, img } = get(); send(title, img); observer.disconnect(); }, 8000);
   })(); true;
 `;
 
@@ -128,7 +128,7 @@ function OgExtractorBase({ url, onSuccess, onFail }: Props) {
 
   if (!httpUrl) return null;
 
-  if (httpUrl.includes('coupang.com') || httpUrl.includes('oliveyoung.co.kr') || httpUrl.includes('oy.run')) {
+  if (httpUrl.includes('coupang.com') || httpUrl.includes('oliveyoung.co.kr') || httpUrl.includes('oy.run') || httpUrl.includes('arca.live')) {
     return <WebViewExtractor url={httpUrl} onSuccess={onSuccess} onFail={onFail} />;
   }
   return <FetchExtractor url={httpUrl} onSuccess={onSuccess} onFail={onFail} />;
