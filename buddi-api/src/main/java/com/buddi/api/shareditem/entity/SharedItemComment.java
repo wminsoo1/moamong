@@ -40,6 +40,7 @@ public class SharedItemComment {
         c.sharedItem = sharedItem;
         c.userId = userId;
         c.content = content;
+        c.createdAt = LocalDateTime.now();
         return c;
     }
 }
