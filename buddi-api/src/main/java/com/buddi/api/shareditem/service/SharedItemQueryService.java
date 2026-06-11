@@ -30,17 +30,40 @@ public class SharedItemQueryService {
     private final SharedItemRepository sharedItemRepository;
     private final UserQueryService userQueryService;
     private final RoomQueryService roomQueryService;
+    private final FeedCacheService feedCacheService;
 
     @Transactional(readOnly = true)
     public FeedPageResponse getSharedItemFeed(Long userId, Long roomId, Long cursor, int size) {
         roomQueryService.validateMember(roomId, userId);
+
+        FeedPageResponse baseFeed;
+        if (cursor == null) {
+            baseFeed = feedCacheService.getFeed(roomId, k -> fetchFeed(k, null, size));
+        } else {
+            baseFeed = fetchFeed(roomId, cursor, size);
+        }
+
+        Set<String> myReactions = feedCacheService.getReactions(userId,
+                k -> sharedItemRepository.findReactionsByUserId(userId).stream()
+                        .map(r -> r.getSharedItem().getId() + "_" + r.getEmoji())
+                        .collect(Collectors.toSet()));
+
+        return applyReacted(baseFeed, myReactions);
+    }
+
+    private FeedPageResponse fetchFeed(Long roomId, Long cursor, int size) {
         PageRequest pageable = PageRequest.of(0, size + 1);
-        List<SharedItem> items = cursor == null
-                ? sharedItemRepository.findFeedByRoomId(roomId, pageable)
-                : sharedItemRepository.findFeedByRoomIdWithCursor(roomId, cursor, pageable);
+
+        List<SharedItem> items = sharedItemRepository.findFeedByRoomId(roomId, pageable);
+        if (cursor != null) {
+            items = sharedItemRepository.findFeedByRoomIdWithCursor(roomId, cursor, pageable);
+        }
 
         boolean hasNext = items.size() > size;
-        List<SharedItem> content = hasNext ? items.subList(0, size) : items;
+        List<SharedItem> content = items;
+        if (hasNext) {
+            content = items.subList(0, size);
+        }
 
         if (content.isEmpty()) return new FeedPageResponse(List.of(), false, null);
 
@@ -49,11 +72,63 @@ public class SharedItemQueryService {
                 .stream().collect(Collectors.toMap(User::getId, u -> u));
 
         List<SharedItemFeedResponse> responses = content.stream()
-                .map(si -> toResponse(userId, si, userMap))
+                .map(si -> toResponse(si, userMap))
                 .toList();
 
-        Long nextCursor = hasNext ? content.get(content.size() - 1).getId() : null;
+        Long nextCursor = null;
+        if (hasNext) {
+            nextCursor = content.get(content.size() - 1).getId();
+        }
         return new FeedPageResponse(responses, hasNext, nextCursor);
+    }
+
+    private FeedPageResponse applyReacted(FeedPageResponse feed, Set<String> myReactions) {
+        List<SharedItemFeedResponse> updated = feed.content().stream()
+                .map(item -> new SharedItemFeedResponse(
+                        item.sharedItemId(), item.userId(), item.shareGroupId(),
+                        item.senderUsername(), item.amount(), item.url(), item.title(),
+                        item.imageUrl(), item.review(), item.category(), item.createdAt(),
+                        item.reactions().stream()
+                                .map(r -> new ReactionSummary(r.emoji(), r.count(),
+                                        myReactions.contains(item.sharedItemId() + "_" + r.emoji())))
+                                .toList(),
+                        item.commentCount(), item.viewCount()
+                ))
+                .toList();
+        return new FeedPageResponse(updated, feed.hasNext(), feed.nextCursor());
+    }
+
+    private SharedItemFeedResponse toResponse(SharedItem si, Map<Long, User> userMap) {
+        String senderUsername = "알 수 없음";
+        User sender = userMap.get(si.getUserId());
+        if (sender != null) {
+            senderUsername = sender.getUsername();
+        }
+        return new SharedItemFeedResponse(
+                si.getId(),
+                si.getUserId(),
+                si.getShareGroupId(),
+                senderUsername,
+                si.getAmount(),
+                si.getUrl(),
+                si.getTitle(),
+                si.getImageUrl(),
+                si.getMemo(),
+                si.getCategory().name(),
+                si.getCreatedAt().atOffset(ZoneOffset.UTC).withOffsetSameInstant(ZoneOffset.ofHours(9)),
+                buildReactionSummaries(si.getReactions()),
+                si.getComments().size(),
+                si.getViewCount()
+        );
+    }
+
+    private List<ReactionSummary> buildReactionSummaries(List<SharedItemReaction> reactions) {
+        if (reactions.isEmpty()) return List.of();
+        Map<String, Long> counts = reactions.stream()
+                .collect(Collectors.groupingBy(SharedItemReaction::getEmoji, Collectors.counting()));
+        return counts.entrySet().stream()
+                .map(e -> new ReactionSummary(e.getKey(), e.getValue().intValue(), false))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -70,40 +145,6 @@ public class SharedItemQueryService {
                         userQueryService.findById(c.getUserId()).getUsername(),
                         c.getContent(),
                         c.getCreatedAt().atOffset(ZoneOffset.UTC).withOffsetSameInstant(ZoneOffset.ofHours(9))))
-                .toList();
-    }
-
-    private SharedItemFeedResponse toResponse(Long userId, SharedItem si, Map<Long, User> userMap) {
-        User sender = userMap.get(si.getUserId());
-        String senderUsername = sender != null ? sender.getUsername() : "알 수 없음";
-        return new SharedItemFeedResponse(
-                si.getId(),
-                si.getUserId(),
-                si.getShareGroupId(),
-                senderUsername,
-                si.getAmount(),
-                si.getUrl(),
-                si.getTitle(),
-                si.getImageUrl(),
-                si.getMemo(),
-                si.getCategory().name(),
-                si.getCreatedAt().atOffset(ZoneOffset.UTC).withOffsetSameInstant(ZoneOffset.ofHours(9)),
-                buildReactionSummaries(userId, si.getReactions()),
-                si.getComments().size(),
-                si.getViewCount()
-        );
-    }
-
-    private List<ReactionSummary> buildReactionSummaries(Long userId, List<SharedItemReaction> reactions) {
-        if (reactions.isEmpty()) return List.of();
-        Map<String, Long> counts = reactions.stream()
-                .collect(Collectors.groupingBy(SharedItemReaction::getEmoji, Collectors.counting()));
-        Set<String> mine = reactions.stream()
-                .filter(r -> r.getUserId().equals(userId))
-                .map(SharedItemReaction::getEmoji)
-                .collect(Collectors.toSet());
-        return counts.entrySet().stream()
-                .map(e -> new ReactionSummary(e.getKey(), e.getValue().intValue(), mine.contains(e.getKey())))
                 .toList();
     }
 }

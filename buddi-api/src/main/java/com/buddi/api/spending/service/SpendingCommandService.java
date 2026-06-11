@@ -1,13 +1,10 @@
 package com.buddi.api.spending.service;
 
 import com.buddi.api.global.s3.PresignedUrlService;
-import com.buddi.api.shareditem.dto.SharedItemResponse;
-import com.buddi.api.shareditem.service.SharedItemCommandService;
 import com.buddi.api.spending.dto.SpendingRequest;
 import com.buddi.api.spending.dto.SpendingResponse;
 import com.buddi.api.spending.entity.Spending;
 import com.buddi.api.spending.repository.SpendingRepository;
-import com.buddi.api.shareditem.entity.SharedItemCategory;
 import com.buddi.api.user.entity.Category;
 import com.buddi.api.user.entity.CategoryGroupMeta;
 import com.buddi.api.user.entity.User;
@@ -18,15 +15,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class SpendingCommandService {
 
     private final SpendingRepository spendingRepository;
     private final UserRepository userRepository;
-    private final SharedItemCommandService sharedItemCommandService;
     private final PresignedUrlService presignedUrlService;
 
     @Transactional
@@ -63,15 +57,6 @@ public class SpendingCommandService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "카테고리 또는 분류를 선택해주세요");
         }
         return new String[]{CategoryGroupMeta.labelOf(groupKey), groupKey};
-    }
-
-    @Transactional
-    public List<SharedItemResponse> markAsSharedItem(Long userId, Long spendingId, List<Long> roomIds,
-                                                      String url, String title, String imageUrl, String memo,
-                                                      SharedItemCategory category, boolean isPublic) {
-        Spending spending = getOwnedSpending(userId, spendingId);
-        return sharedItemCommandService.createFromSpending(
-                userId, spendingId, spending.getAmount(), url, title, imageUrl, memo, category, roomIds, isPublic);
     }
 
     @Transactional

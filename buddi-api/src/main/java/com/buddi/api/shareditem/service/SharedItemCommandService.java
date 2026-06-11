@@ -33,6 +33,7 @@ public class SharedItemCommandService {
     private final RoomQueryService roomQueryService;
     private final UserQueryService userQueryService;
     private final ApplicationEventPublisher eventPublisher;
+    private final FeedCacheService feedCacheService;
 
     @Transactional
     public List<SharedItemResponse> create(Long userId, String url, String title, String imageUrl,
@@ -42,7 +43,7 @@ public class SharedItemCommandService {
         roomIds.forEach(roomId -> roomQueryService.validateMember(roomId, userId));
 
         String shareGroupId = UUID.randomUUID().toString();
-        return roomIds.stream().map(roomId -> {
+        List<SharedItemResponse> result = roomIds.stream().map(roomId -> {
             SharedItem item = SharedItem.of(userId, title, url, imageUrl, review, category, null, amount, isPublic, shareGroupId);
             sharedItemRepository.save(item);
             item.shareToRoom(roomId);
@@ -50,25 +51,8 @@ public class SharedItemCommandService {
                     item.getId(), userId, amount, url, title, review, List.of(roomId)));
             return new SharedItemResponse(item);
         }).toList();
-    }
-
-    @Transactional
-    public List<SharedItemResponse> createFromSpending(Long userId, Long spendingId, Long amount,
-                                                        String url, String title, String imageUrl,
-                                                        String memo, SharedItemCategory category,
-                                                        List<Long> roomIds, boolean isPublic) {
-        if (roomIds == null || roomIds.isEmpty()) throw new IllegalArgumentException("공유할 방을 선택해주세요");
-        roomIds.forEach(roomId -> roomQueryService.validateMember(roomId, userId));
-
-        String shareGroupId = UUID.randomUUID().toString();
-        return roomIds.stream().map(roomId -> {
-            SharedItem item = SharedItem.of(userId, title, url, imageUrl, memo, category, spendingId, amount, isPublic, shareGroupId);
-            sharedItemRepository.save(item);
-            item.shareToRoom(roomId);
-            eventPublisher.publishEvent(new SharedItemSharedEvent(
-                    item.getId(), userId, amount, url, title, memo, List.of(roomId)));
-            return new SharedItemResponse(item);
-        }).toList();
+        roomIds.forEach(feedCacheService::evictFeed);
+        return result;
     }
 
     @Transactional
@@ -76,7 +60,15 @@ public class SharedItemCommandService {
         SharedItem item = sharedItemRepository.findById(sharedItemId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "공유 아이템이 존재하지 않습니다"));
         validateItemAccess(userId, item);
+        boolean existed = item.getReactions().stream()
+                .anyMatch(r -> r.getUserId().equals(userId) && r.getEmoji().equals(emoji));
         item.toggleReaction(userId, emoji);
+        String key = sharedItemId + "_" + emoji;
+        if (existed) {
+            feedCacheService.removeReaction(userId, key);
+        } else {
+            feedCacheService.addReaction(userId, key);
+        }
         return buildReactionSummaries(userId, item);
     }
 

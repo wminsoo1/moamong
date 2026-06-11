@@ -1,7 +1,8 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, Modal, Image, StatusBar } from "react-native";
+import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Camera } from "lucide-react-native";
+import { Camera, X } from "lucide-react-native";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
 import { Spending, RecurringSpending } from "@/src/features/spending/types";
 import { CategoryGroup } from "@/src/features/user/types";
@@ -18,9 +19,22 @@ interface Props {
 export function DailyExpenseList({ selectedDate, spendings, recurrings = [], onPressExpense, onPressRecurring }: Props) {
   const { getColor, getIcon } = useGroupSettings();
   const isEmpty = spendings.length === 0 && recurrings.length === 0;
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
 
   return (
     <View style={{ paddingHorizontal: 4 }}>
+      <Modal visible={viewingImage != null} transparent animationType="fade" onRequestClose={() => setViewingImage(null)}>
+        <StatusBar backgroundColor="#000" barStyle="light-content" />
+        <View style={styles.modalBackdrop}>
+          <Pressable style={styles.modalClose} onPress={() => setViewingImage(null)}>
+            <X size={24} color="#fff" />
+          </Pressable>
+          {viewingImage && (
+            <Image source={{ uri: viewingImage }} style={styles.modalImage} resizeMode="contain" />
+          )}
+        </View>
+      </Modal>
+
       <Text style={styles.selectedDateTitle}>{format(selectedDate, "M월 d일")}</Text>
 
       {isEmpty ? (
@@ -68,6 +82,12 @@ export function DailyExpenseList({ selectedDate, spendings, recurrings = [], onP
                         <Text style={styles.expenseCat}>
                           {format(parseISO(expense.createdAt), "a h:mm", { locale: ko })}
                         </Text>
+                      )}
+                      {expense.imageUrl && expense.createdAt && <Text style={styles.expenseCat}>·</Text>}
+                      {expense.imageUrl && (
+                        <Pressable onPress={(e) => { e.stopPropagation(); setViewingImage(expense.imageUrl!); }}>
+                          <Text style={styles.photoBtn}>사진 보기</Text>
+                        </Pressable>
                       )}
                     </View>
                   </View>
@@ -156,5 +176,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1.5,
     borderColor: "#fff",
+  },
+  photoBtn: { fontSize: 12, fontWeight: "600", color: "#3182f6" },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalClose: {
+    position: "absolute",
+    top: 56,
+    right: 20,
+    zIndex: 1,
+    padding: 8,
+  },
+  modalImage: {
+    width: "100%",
+    height: "100%",
   },
 });

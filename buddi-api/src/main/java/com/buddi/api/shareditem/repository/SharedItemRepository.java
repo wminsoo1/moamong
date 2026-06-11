@@ -1,6 +1,7 @@
 package com.buddi.api.shareditem.repository;
 
 import com.buddi.api.shareditem.entity.SharedItem;
+import com.buddi.api.shareditem.entity.SharedItemReaction;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -34,4 +35,7 @@ public interface SharedItemRepository extends JpaRepository<SharedItem, Long> {
     List<SharedItem> findByShareGroupId(String shareGroupId);
 
     void deleteByShareGroupId(String shareGroupId);
+
+    @Query("SELECT r FROM SharedItemReaction r WHERE r.userId = :userId")
+    List<SharedItemReaction> findReactionsByUserId(@Param("userId") Long userId);
 }

@@ -50,7 +50,7 @@ export default function StatsScreen() {
           <View style={styles.monthRow}>
             {params.year ? (
               <Pressable
-                onPress={() => router.navigate("/(tabs)/calendar")}
+                onPress={() => router.back()}
                 style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.5 }]}
               >
                 <ChevronLeft size={24} color="#191f28" />

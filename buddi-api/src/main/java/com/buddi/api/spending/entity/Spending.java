@@ -48,7 +48,8 @@ public class Spending {
 
     @Builder(access = AccessLevel.PRIVATE)
     private Spending(Long userId, SpendingType type, String categoryName,
-                     String categoryGroup, Long amount, LocalDate date, String memo, String imageUrl) {
+                     String categoryGroup, Long amount, LocalDate date, String memo, String imageUrl,
+                     LocalDateTime createdAt) {
         this.userId = userId;
         this.type = type;
         this.categoryName = categoryName;
@@ -57,11 +58,12 @@ public class Spending {
         this.date = date;
         this.memo = memo;
         this.imageUrl = imageUrl;
+        this.createdAt = createdAt;
     }
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (createdAt == null) createdAt = LocalDateTime.now();
     }
 
     public void update(SpendingType type, String categoryName, String categoryGroup,
@@ -88,6 +90,23 @@ public class Spending {
                 .date(date)
                 .memo(memo)
                 .imageUrl(imageUrl)
+                .build();
+    }
+
+    public static Spending of(Long userId, SpendingType type, String categoryName,
+                               String categoryGroup, Long amount, LocalDate date, String memo, String imageUrl,
+                               LocalDateTime createdAt) {
+        if (amount == null || amount <= 0) throw new IllegalArgumentException("금액은 0보다 커야 합니다");
+        return Spending.builder()
+                .userId(userId)
+                .type(type)
+                .categoryName(categoryName)
+                .categoryGroup(categoryGroup)
+                .amount(amount)
+                .date(date)
+                .memo(memo)
+                .imageUrl(imageUrl)
+                .createdAt(createdAt)
                 .build();
     }
 }

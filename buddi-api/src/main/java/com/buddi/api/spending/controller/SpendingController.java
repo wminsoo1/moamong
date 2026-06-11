@@ -1,8 +1,6 @@
 package com.buddi.api.spending.controller;
 
 import com.buddi.api.global.oauth2.UserPrincipal;
-import com.buddi.api.shareditem.dto.ManualSharedItemRequest;
-import com.buddi.api.shareditem.dto.SharedItemResponse;
 import com.buddi.api.spending.dto.SpendingListResponse;
 import com.buddi.api.spending.dto.SpendingRequest;
 import com.buddi.api.spending.dto.SpendingResponse;
@@ -54,23 +52,6 @@ public class SpendingController {
                                                     Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         return ResponseEntity.ok(spendingCommandService.update(principal.getUserId(), id, request));
-    }
-
-    @PostMapping("/{id}/shared-item/manual")
-    public ResponseEntity<List<SharedItemResponse>> markAsSharedItemManual(@PathVariable Long id,
-                                                                            @Valid @RequestBody ManualSharedItemRequest request,
-                                                                            Authentication authentication) {
-        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        String imageUrl = request.imageUrl();
-        if (imageUrl == null || imageUrl.isBlank()) {
-            try {
-                String host = new java.net.URL(request.url()).getHost();
-                imageUrl = "https://www.google.com/s2/favicons?domain=" + host + "&sz=128";
-            } catch (Exception ignored) {}
-        }
-        return ResponseEntity.ok(spendingCommandService.markAsSharedItem(
-                principal.getUserId(), id, request.roomIds(),
-                request.url(), request.title(), imageUrl, request.review(), request.category(), request.isPublic()));
     }
 
     @DeleteMapping("/{id}")
