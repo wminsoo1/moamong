@@ -2,6 +2,7 @@ package com.buddi.api.shareditem.service;
 
 import com.buddi.api.shareditem.notification.event.SharedItemSharedEvent;
 import com.buddi.api.room.service.RoomQueryService;
+import java.time.ZoneOffset;
 import com.buddi.api.shareditem.dto.ReactionSummary;
 import com.buddi.api.shareditem.dto.SharedItemCommentResponse;
 import com.buddi.api.shareditem.dto.SharedItemResponse;
@@ -88,7 +89,7 @@ public class SharedItemCommandService {
         return new SharedItemCommentResponse(comment.getId(),
                 userId,
                 userQueryService.findById(userId).getUsername(),
-                comment.getContent(), comment.getCreatedAt());
+                comment.getContent(), comment.getCreatedAt().atOffset(ZoneOffset.ofHours(9)));
     }
 
     @Transactional

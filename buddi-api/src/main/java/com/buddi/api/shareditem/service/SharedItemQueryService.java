@@ -2,6 +2,7 @@ package com.buddi.api.shareditem.service;
 
 import com.buddi.api.shareditem.dto.FeedPageResponse;
 import com.buddi.api.shareditem.dto.ReactionSummary;
+import java.time.ZoneOffset;
 import com.buddi.api.shareditem.dto.SharedItemCommentResponse;
 import com.buddi.api.shareditem.dto.SharedItemFeedResponse;
 import com.buddi.api.shareditem.entity.SharedItem;
@@ -68,7 +69,7 @@ public class SharedItemQueryService {
                         c.getUserId(),
                         userQueryService.findById(c.getUserId()).getUsername(),
                         c.getContent(),
-                        c.getCreatedAt()))
+                        c.getCreatedAt().atOffset(ZoneOffset.ofHours(9))))
                 .toList();
     }
 
@@ -86,7 +87,7 @@ public class SharedItemQueryService {
                 si.getImageUrl(),
                 si.getMemo(),
                 si.getCategory().name(),
-                si.getCreatedAt(),
+                si.getCreatedAt().atOffset(ZoneOffset.ofHours(9)),
                 buildReactionSummaries(userId, si.getReactions()),
                 si.getComments().size(),
                 si.getViewCount()

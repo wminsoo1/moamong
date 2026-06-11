@@ -1,7 +1,8 @@
-import { View, Text, TextInput, ActivityIndicator, Image, StyleSheet, InteractionManager } from "react-native";
-import { Link as LinkIcon } from "lucide-react-native";
+import { View, Text, TextInput, ActivityIndicator, Image, StyleSheet, InteractionManager, Pressable, ActionSheetIOS } from "react-native";
+import { Link as LinkIcon, Camera, X } from "lucide-react-native";
 import { OgExtractor } from "@/src/components/OgExtractor";
 import { useState, useRef, useEffect, memo } from "react";
+import { useImageUpload } from "@/src/features/spending/hooks/useImageUpload";
 
 interface LinkResult {
   url: string;
@@ -24,7 +25,8 @@ export const LinkInput = memo(function LinkInput({ onChange, initialUrl }: Props
   const [shouldExtractOg, setShouldExtractOg] = useState(false);
   const [ogFailed, setOgFailed] = useState(false);
   const [manualTitle, setManualTitle] = useState("");
-  const [manualImageUrl, setManualImageUrl] = useState("");
+
+  const { imageUri: uploadedUri, imageUrl: uploadedUrl, uploading: imageUploading, pick, pickFromCamera, remove: removeUploadedImage } = useImageUpload();
 
   useEffect(() => {
     if (initialUrl && isValidUrl(initialUrl)) {
@@ -32,6 +34,15 @@ export const LinkInput = memo(function LinkInput({ onChange, initialUrl }: Props
       setShouldExtractOg(true);
     }
   }, [initialUrl]);
+
+  useEffect(() => {
+    if (!uploadedUrl) return;
+    if (ogFailed) {
+      onChange({ url, title: manualTitle || null, imageUrl: uploadedUrl });
+    } else if (ogData) {
+      onChange({ url, title: ogData.title, imageUrl: uploadedUrl });
+    }
+  }, [uploadedUrl]);
 
   const handleUrlChange = (t: string) => {
     const match = t.match(/https?:\/\/[^\s]+/);
@@ -43,7 +54,7 @@ export const LinkInput = memo(function LinkInput({ onChange, initialUrl }: Props
     setShouldExtractOg(false);
     setOgFailed(false);
     setManualTitle("");
-    setManualImageUrl("");
+    removeUploadedImage();
     onChange({ url: isValidUrl(clean) ? clean : "", title: null, imageUrl: null });
   };
 
@@ -59,8 +70,42 @@ export const LinkInput = memo(function LinkInput({ onChange, initialUrl }: Props
     onChange({ url, title: null, imageUrl: null });
   };
 
-  const handleManualChange = (title: string, imageUrl: string) => {
-    onChange({ url, title: title || null, imageUrl: imageUrl || null });
+  const handlePickPhoto = () => {
+    ActionSheetIOS.showActionSheetWithOptions(
+      { options: ["취소", "갤러리에서 선택", "카메라로 찍기"], cancelButtonIndex: 0 },
+      (idx) => {
+        if (idx === 1) pick();
+        if (idx === 2) pickFromCamera();
+      }
+    );
+  };
+
+  const imageSection = () => {
+    if (uploadedUri) return (
+      <View style={styles.imagePreviewWrap}>
+        <Image source={{ uri: uploadedUri }} style={styles.imagePreview} />
+        {imageUploading ? (
+          <View style={styles.imageOverlay}><ActivityIndicator color="#fff" /></View>
+        ) : (
+          <Pressable
+            onPress={() => {
+              removeUploadedImage();
+              if (ogFailed) onChange({ url, title: manualTitle || null, imageUrl: null });
+              else if (ogData) onChange({ url, title: ogData.title, imageUrl: ogData.imageUrl });
+            }}
+            style={styles.imageRemoveBtn}
+          >
+            <X size={12} color="#fff" strokeWidth={3} />
+          </Pressable>
+        )}
+      </View>
+    );
+    return (
+      <Pressable onPress={handlePickPhoto} style={({ pressed }) => [styles.imagePickerBtn, pressed && { opacity: 0.6 }]}>
+        <Camera size={18} color="#8b95a1" />
+        <Text style={styles.imagePickerText}>사진 추가 (필수)</Text>
+      </Pressable>
+    );
   };
 
   return (
@@ -98,7 +143,23 @@ export const LinkInput = memo(function LinkInput({ onChange, initialUrl }: Props
 
       {ogData && (
         <View style={styles.ogPreview}>
-          {ogData.imageUrl && <Image source={{ uri: ogData.imageUrl }} style={styles.ogImage} />}
+          {uploadedUri ? (
+            <View>
+              <Image source={{ uri: uploadedUri }} style={styles.ogImage} />
+              <Pressable
+                onPress={() => { removeUploadedImage(); onChange({ url, title: ogData.title, imageUrl: ogData.imageUrl }); }}
+                style={styles.ogImageRemove}
+              >
+                <X size={12} color="#fff" />
+              </Pressable>
+            </View>
+          ) : ogData.imageUrl ? (
+            <Image source={{ uri: ogData.imageUrl }} style={styles.ogImage} />
+          ) : (
+            <Pressable onPress={handlePickPhoto} style={styles.ogImagePlaceholder}>
+              {imageUploading ? <ActivityIndicator size="small" color="#3182f6" /> : <Camera size={20} color="#adb5bd" />}
+            </Pressable>
+          )}
           <Text style={styles.ogTitle} numberOfLines={2}>{ogData.title || "제목 없음"}</Text>
         </View>
       )}
@@ -112,20 +173,13 @@ export const LinkInput = memo(function LinkInput({ onChange, initialUrl }: Props
               placeholder="제목을 직접 입력해주세요 *"
               placeholderTextColor="#c9cdd2"
               value={manualTitle}
-              onChangeText={(t) => { setManualTitle(t); handleManualChange(t, manualImageUrl); }}
+              onChangeText={(t) => {
+                setManualTitle(t);
+                onChange({ url, title: t || null, imageUrl: uploadedUrl || null });
+              }}
             />
           </View>
-          <View style={[styles.inputRow, { marginBottom: 8 }]}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="이미지 URL (선택)"
-              placeholderTextColor="#c9cdd2"
-              value={manualImageUrl}
-              onChangeText={(t) => { setManualImageUrl(t); handleManualChange(manualTitle, t); }}
-              autoCapitalize="none"
-              keyboardType="url"
-            />
-          </View>
+          {imageSection()}
         </View>
       )}
     </View>
@@ -138,5 +192,13 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 12, color: "#f04452", marginBottom: 12 },
   ogPreview: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, backgroundColor: "#f9fafb", borderRadius: 12, borderWidth: 1, borderColor: "#e5e8eb", marginBottom: 20 },
   ogImage: { width: 56, height: 56, borderRadius: 8 },
+  ogImagePlaceholder: { width: 56, height: 56, borderRadius: 8, backgroundColor: "#f2f4f6", alignItems: "center", justifyContent: "center" },
+  ogImageRemove: { position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: 9, backgroundColor: "#8b95a1", alignItems: "center", justifyContent: "center" },
   ogTitle: { flex: 1, fontSize: 14, fontWeight: "600", color: "#191f28" },
+  imagePickerBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: "#e5e8eb", borderStyle: "dashed", alignSelf: "flex-start" },
+  imagePickerText: { fontSize: 14, fontWeight: "600", color: "#8b95a1" },
+  imagePreviewWrap: { position: "relative", alignSelf: "flex-start" },
+  imagePreview: { width: 80, height: 80, borderRadius: 12 },
+  imageOverlay: { ...StyleSheet.absoluteFillObject, borderRadius: 12, backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center" },
+  imageRemoveBtn: { position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: 10, backgroundColor: "#4e5968", alignItems: "center", justifyContent: "center" },
 });

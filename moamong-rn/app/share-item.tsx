@@ -108,7 +108,7 @@ const { data: shareSettings, isLoading: settingsLoading } = useShareSettings();
           </Pressable>
         )}
         <Pressable
-          disabled={!shareUrl || shareRoomIds.length === 0 || settingsLoading || shareHotItem.isPending}
+          disabled={!shareUrl || !shareImageUrl || shareRoomIds.length === 0 || settingsLoading || shareHotItem.isPending}
           onPress={() =>
             shareHotItem.mutate(
               {
@@ -126,7 +126,7 @@ const { data: shareSettings, isLoading: settingsLoading } = useShareSettings();
           }
           style={[
             styles.primaryBtn,
-            (!shareUrl || shareRoomIds.length === 0 || shareHotItem.isPending) && styles.btnDisabled,
+            (!shareUrl || !shareImageUrl || shareRoomIds.length === 0 || shareHotItem.isPending) && styles.btnDisabled,
           ]}
         >
           <Text style={styles.primaryBtnText}>

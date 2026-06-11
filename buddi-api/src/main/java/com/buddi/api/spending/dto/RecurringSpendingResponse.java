@@ -5,7 +5,8 @@ import com.buddi.api.user.entity.CategoryGroupMeta;
 import lombok.Getter;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @Getter
 public class RecurringSpendingResponse {
@@ -19,7 +20,7 @@ public class RecurringSpendingResponse {
     private final LocalDate startDate;
     private final LocalDate endDate;
     private final String memo;
-    private final LocalDateTime createdAt;
+    private final OffsetDateTime createdAt;
 
     public RecurringSpendingResponse(RecurringSpending r) {
         this.id = r.getId();
@@ -32,6 +33,6 @@ public class RecurringSpendingResponse {
         this.startDate = r.getStartDate();
         this.endDate = r.getEndDate();
         this.memo = r.getMemo();
-        this.createdAt = r.getCreatedAt();
+        this.createdAt = r.getCreatedAt().atOffset(ZoneOffset.ofHours(9));
     }
 }

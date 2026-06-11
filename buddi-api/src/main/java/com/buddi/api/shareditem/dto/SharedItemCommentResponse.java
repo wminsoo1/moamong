@@ -1,5 +1,5 @@
 package com.buddi.api.shareditem.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
-public record SharedItemCommentResponse(Long id, Long userId, String username, String content, LocalDateTime createdAt) {}
+public record SharedItemCommentResponse(Long id, Long userId, String username, String content, OffsetDateTime createdAt) {}

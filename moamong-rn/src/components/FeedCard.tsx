@@ -110,7 +110,7 @@ export function FeedCard({
           </Pressable>
 
           <View style={styles.feedActionRow}>
-            {item.amount && item.amount > 0 ? (
+            {item.amount != null ? (
               <View style={styles.feedAmtRow}>
                 <Text style={styles.feedAmt}>{item.amount.toLocaleString()}</Text>
                 <Text style={styles.feedAmtUnit}>원</Text>

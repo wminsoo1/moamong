@@ -1,6 +1,6 @@
 package com.buddi.api.shareditem.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public record SharedItemFeedResponse(
@@ -14,7 +14,7 @@ public record SharedItemFeedResponse(
         String imageUrl,
         String review,
         String category,
-        LocalDateTime createdAt,
+        OffsetDateTime createdAt,
         List<ReactionSummary> reactions,
         int commentCount,
         int viewCount
