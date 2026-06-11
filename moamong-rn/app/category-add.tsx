@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View, Text, ScrollView, Pressable, TextInput,
-  StyleSheet, KeyboardAvoidingView, Platform,
+  StyleSheet, KeyboardAvoidingView, Platform, Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCreateCategory } from "@/src/features/user/mutations/useCreateCategory";
@@ -25,6 +25,13 @@ export default function CategoryAddScreen() {
   );
   const [catName, setCatName] = useState("");
   const [catError, setCatError] = useState("");
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardWillShow", () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener("keyboardWillHide", () => setKeyboardVisible(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   const createCategory = useCreateCategory();
   const { userCategories } = useUserCategories();
@@ -134,7 +141,7 @@ export default function CategoryAddScreen() {
 
         </ScrollView>
 
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        {!keyboardVisible && <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           {catError ? <Text style={styles.errorText}>{catError}</Text> : null}
           <Pressable
             disabled={!catName.trim() || createCategory.isPending}
@@ -154,7 +161,7 @@ export default function CategoryAddScreen() {
           >
             <Text style={styles.submitText}>{createCategory.isPending ? "추가 중..." : "추가하기"}</Text>
           </Pressable>
-        </View>
+        </View>}
       </KeyboardAvoidingView>
     </View>
   );

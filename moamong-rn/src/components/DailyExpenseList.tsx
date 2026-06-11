@@ -1,5 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { ko } from "date-fns/locale";
 import { Camera } from "lucide-react-native";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
 import { Spending, RecurringSpending } from "@/src/features/spending/types";
@@ -60,11 +61,15 @@ export function DailyExpenseList({ selectedDate, spendings, recurrings = [], onP
                     <Text style={styles.expenseName} numberOfLines={1}>
                       {expense.memo || expense.categoryName}
                     </Text>
-                    {subLine && (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
-                        <Text style={styles.expenseCat} numberOfLines={1}>{subLine}</Text>
-                      </View>
-                    )}
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+                      {subLine && <Text style={styles.expenseCat} numberOfLines={1}>{subLine}</Text>}
+                      {subLine && expense.createdAt && <Text style={styles.expenseCat}>·</Text>}
+                      {expense.createdAt && (
+                        <Text style={styles.expenseCat}>
+                          {format(parseISO(expense.createdAt), "a h:mm", { locale: ko })}
+                        </Text>
+                      )}
+                    </View>
                   </View>
                 );
               })()}

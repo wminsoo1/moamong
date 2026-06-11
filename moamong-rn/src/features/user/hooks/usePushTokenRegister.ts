@@ -7,7 +7,6 @@ import { useRegisterPushToken } from "../mutations/useRegisterPushToken";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
     shouldShowBanner: true,
@@ -42,17 +41,6 @@ export function usePushTokenRegister() {
 
         unsubOpen = messaging().onNotificationOpenedApp((remoteMessage) => {
           openNotificationUrl(remoteMessage.data?.url as string | undefined);
-        });
-
-        messaging().onMessage(async (remoteMessage) => {
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: remoteMessage.notification?.title ?? "모아몽",
-              body: remoteMessage.notification?.body ?? "",
-              data: remoteMessage.data,
-            },
-            trigger: null,
-          });
         });
 
         messaging().getInitialNotification().then((remoteMessage) => {

@@ -31,9 +31,9 @@ export default function HomeScreen() {
   const { spendings } = useSpendings(year, month);
   const { activeRecurrings } = useActiveRecurringSpendings(year, month);
 
-  const selectedDateSpendings = spendings.filter((e) =>
-    isSameDay(new Date(e.date), selectedDate)
-  );
+  const selectedDateSpendings = spendings
+    .filter((e) => isSameDay(new Date(e.date), selectedDate))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const selectedDateRecurrings = activeRecurrings.filter(
     (r) => r.dayOfMonth === selectedDate.getDate()

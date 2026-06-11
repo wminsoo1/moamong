@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, InteractionManager } from "react-native";
 import { WebView, WebViewMessageEvent } from "react-native-webview";
 import { fetchOgData, OgData } from "@/src/lib/ogFetcher";
 
@@ -85,14 +85,14 @@ function FetchExtractor({ url, onSuccess, onFail }: Props) {
     fetchOgData(url)
       .then((data) => {
         if (data.imageUrl) {
-          // 이미지까지 있으면 바로 완료
           onSuccess(data);
         } else {
-          // 이미지 없으면 WebView로 시도 (title은 보존)
-          setServerData(data);
+          InteractionManager.runAfterInteractions(() => setServerData(data));
         }
       })
-      .catch(() => setServerData({ title: null, imageUrl: null }));
+      .catch(() => {
+        InteractionManager.runAfterInteractions(() => setServerData({ title: null, imageUrl: null }));
+      });
   }, [url]);
 
   if (serverData !== null) {

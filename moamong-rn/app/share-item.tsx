@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useCallback } from "react";
 import {
   View, Text, Pressable, TextInput, ScrollView,
   StyleSheet, KeyboardAvoidingView, Platform,
@@ -29,12 +29,13 @@ const { data: shareSettings } = useShareSettings();
   const [shareAmount, setShareAmount] = useState("");
   const [shareReview, setShareReview] = useState("");
 
-  const shareAmountDisplay = useMemo(
-    () => (shareAmount ? parseInt(shareAmount, 10).toLocaleString() : ""),
-    [shareAmount]
-  );
-
   const shareRoomIds = shareSettings?.roomIds ?? [];
+
+  const handleLinkChange = useCallback(({ url, title, imageUrl }: { url: string; title: string | null; imageUrl: string | null }) => {
+    setShareUrl(url);
+    setShareTitle(title);
+    setShareImageUrl(imageUrl);
+  }, []);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -53,11 +54,7 @@ const { data: shareSettings } = useShareSettings();
         <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
           <LinkInput
             initialUrl={resolvedInitialUrl || undefined}
-            onChange={({ url, title, imageUrl }) => {
-              setShareUrl(url);
-              setShareTitle(title);
-              setShareImageUrl(imageUrl);
-            }}
+            onChange={handleLinkChange}
           />
 
           <View style={styles.inputRow}>
@@ -66,7 +63,7 @@ const { data: shareSettings } = useShareSettings();
               placeholder="금액을 입력해주세요 (필수)"
               placeholderTextColor="#c9cdd2"
               keyboardType="numeric"
-              value={shareAmountDisplay}
+              value={shareAmount}
               onChangeText={(t) => setShareAmount(t.replace(/[^0-9]/g, ""))}
             />
             <Text style={styles.unitText}>원</Text>

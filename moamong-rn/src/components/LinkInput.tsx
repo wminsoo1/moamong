@@ -1,7 +1,7 @@
-import { View, Text, TextInput, ActivityIndicator, Image, StyleSheet } from "react-native";
+import { View, Text, TextInput, ActivityIndicator, Image, StyleSheet, InteractionManager } from "react-native";
 import { Link as LinkIcon } from "lucide-react-native";
 import { OgExtractor } from "@/src/components/OgExtractor";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 
 interface LinkResult {
   url: string;
@@ -16,7 +16,7 @@ interface Props {
 
 const isValidUrl = (u: string) => u.startsWith("http://") || u.startsWith("https://");
 
-export function LinkInput({ onChange, initialUrl }: Props) {
+export const LinkInput = memo(function LinkInput({ onChange, initialUrl }: Props) {
   const inputRef = useRef<TextInput>(null);
   const [url, setUrl] = useState(initialUrl ?? "");
   const [urlError, setUrlError] = useState(false);
@@ -77,7 +77,7 @@ export function LinkInput({ onChange, initialUrl }: Props) {
           onBlur={() => {
             if (!url.trim()) return;
             if (!isValidUrl(url)) { setUrlError(true); return; }
-            setShouldExtractOg(true);
+            InteractionManager.runAfterInteractions(() => setShouldExtractOg(true));
           }}
           autoCapitalize="none"
           keyboardType="url"
@@ -130,7 +130,7 @@ export function LinkInput({ onChange, initialUrl }: Props) {
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   inputRow: { flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "#e5e8eb", paddingBottom: 16, marginBottom: 20 },

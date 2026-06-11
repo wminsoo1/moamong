@@ -91,6 +91,11 @@ export default function EditExpenseScreen() {
       </View>
 
       <Text style={styles.dateSub}>{format(selectedDate, "M월 d일 (eee)", { locale: ko })}</Text>
+      {initialExpense.createdAt && (
+        <Text style={styles.timeSub}>
+          {format(parseISO(initialExpense.createdAt), "a h:mm", { locale: ko })}에 기록됨
+        </Text>
+      )}
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
@@ -145,7 +150,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, height: 56, borderBottomWidth: 1, borderBottomColor: "#f2f4f6" },
   headerSideBtn: { width: 44, height: 44, alignItems: "flex-start", justifyContent: "center" },
   headerTitle: { fontSize: 17, fontWeight: "700", color: "#191f28" },
-  dateSub: { textAlign: "center", fontSize: 17, fontWeight: "600", color: "#191f28", paddingVertical: 10 },
+  dateSub: { textAlign: "center", fontSize: 17, fontWeight: "600", color: "#191f28", paddingTop: 10, paddingBottom: 2 },
+  timeSub: { textAlign: "center", fontSize: 12, color: "#adb5bd", paddingBottom: 10 },
   scroll: { flex: 1, paddingHorizontal: 20 },
   footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20, borderTopWidth: 1, borderTopColor: "#f2f4f6", gap: 8 },
   errorText: { fontSize: 12, color: "#f04452", textAlign: "center" },
