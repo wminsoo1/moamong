@@ -5,7 +5,8 @@ import com.buddi.api.user.entity.CategoryGroupMeta;
 import lombok.Getter;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @Getter
 public class SpendingListResponse {
@@ -18,7 +19,7 @@ public class SpendingListResponse {
     private final LocalDate date;
     private final String memo;
     private final String imageUrl;
-    private final LocalDateTime createdAt;
+    private final OffsetDateTime createdAt;
 
     public SpendingListResponse(Spending spending) {
         this.id = spending.getId();
@@ -30,6 +31,8 @@ public class SpendingListResponse {
         this.date = spending.getDate();
         this.memo = spending.getMemo();
         this.imageUrl = spending.getImageUrl();
-        this.createdAt = spending.getCreatedAt();
+        this.createdAt = spending.getCreatedAt() != null
+                ? spending.getCreatedAt().atOffset(ZoneOffset.UTC)
+                : null;
     }
 }
