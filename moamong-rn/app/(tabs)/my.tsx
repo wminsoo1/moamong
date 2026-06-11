@@ -19,7 +19,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useCurrentUser } from "@/src/features/user/queries/useCurrentUser";
 import { useUpdateNickname } from "@/src/features/user/mutations/useUpdateNickname";
 import { useToggleNotification } from "@/src/features/user/mutations/useToggleNotification";
+import { useRegisterPushToken } from "@/src/features/user/mutations/useRegisterPushToken";
 import { useLogout } from "@/src/features/user/mutations/useLogout";
+import messaging from "@react-native-firebase/messaging";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiClient, clearSessionId } from "@/src/lib/api";
 import { router } from "expo-router";
@@ -77,6 +79,7 @@ export default function MyScreen() {
 
   const updateNickname = useUpdateNickname();
   const toggleNotification = useToggleNotification();
+  const registerPushToken = useRegisterPushToken();
   const { logout } = useLogout();
   const queryClient = useQueryClient();
 
@@ -99,7 +102,18 @@ export default function MyScreen() {
         if (newStatus !== "granted") return;
       }
     }
-    toggleNotification.mutate(enabled);
+    toggleNotification.mutate(enabled, {
+      onSuccess: async () => {
+        if (enabled) {
+          try {
+            const token = await messaging().getToken();
+            registerPushToken.mutate(token);
+          } catch (e) {
+            console.warn("[FCM] 토큰 재등록 실패", e);
+          }
+        }
+      },
+    });
   };
 
   const openNicknameDialog = () => {
@@ -236,8 +250,8 @@ export default function MyScreen() {
           <View style={styles.menuRow}>
             <Bell size={20} color="#4e5968" />
             <View style={{ flex: 1 }}>
-              <Text style={styles.menuText}>실시간 알림 수신</Text>
-              <Text style={styles.menuSubText}>피드 공유 시 실시간 푸시 알림</Text>
+              <Text style={styles.menuText}>알림 수신</Text>
+              <Text style={styles.menuSubText}>방 사람들이 아이템을 공유하면 알림이 와요</Text>
             </View>
             <Switch
               value={me.notificationEnabled}
