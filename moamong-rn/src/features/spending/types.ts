@@ -1,3 +1,19 @@
+export interface RoomSpending extends Spending {
+  userId: number;
+  username: string;
+  commentCount: number;
+  likeCount: number;
+  liked: boolean;
+}
+
+export interface SpendingComment {
+  id: number;
+  userId: number;
+  username: string;
+  content: string;
+  createdAt: string;
+}
+
 export interface Spending {
   id: number;
   type: "EXPENSE" | "INCOME";

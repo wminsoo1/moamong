@@ -1,7 +1,8 @@
 import { Tabs, usePathname } from "expo-router";
 import { View, StyleSheet } from "react-native";
-import { Home, CalendarDays, User } from "lucide-react-native";
+import { MessageCircle, CalendarDays, User } from "lucide-react-native";
 import { usePushTokenRegister } from "@/src/features/user/hooks/usePushTokenRegister";
+import { useUnreadBadge } from "@/src/features/room/hooks/useUnreadBadge";
 
 function TabIcon({ focused, icon: Icon, relatedPaths }: { focused: boolean; icon: any; label: string; relatedPaths?: string[] }) {
   const pathname = usePathname();
@@ -16,6 +17,7 @@ function TabIcon({ focused, icon: Icon, relatedPaths }: { focused: boolean; icon
 
 export default function TabLayout() {
   usePushTokenRegister();
+  const totalUnread = useUnreadBadge();
 
   return (
     <Tabs
@@ -32,10 +34,16 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="feed"
+        name="room"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon={Home} label="홈" />,
+          tabBarBadge: totalUnread > 0 ? totalUnread : undefined,
+          tabBarBadgeStyle: { backgroundColor: "#f04452", fontSize: 9, minWidth: 16, height: 16, lineHeight: 16, top: -3, right: -6 },
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon={MessageCircle} label="방" />,
         }}
+      />
+      <Tabs.Screen
+        name="feed"
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="my"

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as Notifications from "expo-notifications";
 import { Platform, Linking, AppState } from "react-native";
+import { router } from "expo-router";
 import "@react-native-firebase/app";
 import messaging from "@react-native-firebase/messaging";
 import { useRegisterPushToken } from "../mutations/useRegisterPushToken";
@@ -14,8 +15,12 @@ Notifications.setNotificationHandler({
   }),
 });
 
-function openNotificationUrl(url: string | undefined) {
-  if (url && url !== "/") {
+function handleNotificationData(data?: Record<string, string>) {
+  const screen = data?.screen;
+  const url = data?.url;
+  if (screen) {
+    router.push(screen as any);
+  } else if (url && url !== "/") {
     Linking.openURL(url).catch(() => {});
   }
 }
@@ -28,6 +33,7 @@ export function usePushTokenRegister() {
   useEffect(() => {
     let unsubRefresh: (() => void) | undefined;
     let unsubOpen: (() => void) | undefined;
+    let unsubMessage: (() => void) | undefined;
 
     const init = (retryCount = 0) => {
       try {
@@ -40,13 +46,24 @@ export function usePushTokenRegister() {
         });
 
         unsubOpen = messaging().onNotificationOpenedApp((remoteMessage) => {
-          openNotificationUrl(remoteMessage.data?.url as string | undefined);
+          handleNotificationData(remoteMessage.data);
         });
 
         messaging().getInitialNotification().then((remoteMessage) => {
           if (remoteMessage) {
-            openNotificationUrl(remoteMessage.data?.url as string | undefined);
+            handleNotificationData(remoteMessage.data);
           }
+        });
+
+        unsubMessage = messaging().onMessage(async (remoteMessage) => {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: remoteMessage.notification?.title ?? "새 알림",
+              body: remoteMessage.notification?.body ?? "",
+              data: remoteMessage.data ?? {},
+            },
+            trigger: null,
+          });
         });
       } catch (e) {
         if (retryCount < 3) {
@@ -59,6 +76,10 @@ export function usePushTokenRegister() {
 
     init();
 
+    const unsubForegroundTap = Notifications.addNotificationResponseReceivedListener((response) => {
+      handleNotificationData(response.notification.request.content.data as Record<string, string>);
+    });
+
     const unsubAppState = AppState.addEventListener("change", (nextState) => {
       if (appState.current !== "active" && nextState === "active") {
         registerToken();
@@ -69,6 +90,8 @@ export function usePushTokenRegister() {
     return () => {
       unsubRefresh?.();
       unsubOpen?.();
+      unsubMessage?.();
+      unsubForegroundTap.remove();
       unsubAppState.remove();
     };
   }, []);

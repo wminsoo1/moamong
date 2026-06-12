@@ -19,6 +19,8 @@ export function useCreateSpending() {
       queryClient.invalidateQueries({ queryKey: spendingKeys.byMonth(year, month) });
       queryClient.invalidateQueries({ queryKey: spendingKeys.weeklyStats(year, month) });
       queryClient.invalidateQueries({ queryKey: spendingKeys.categoryStats(year, month) });
+      queryClient.invalidateQueries({ queryKey: ["spendings", "room"] });
+      queryClient.invalidateQueries({ queryKey: ["spendings", "member"] });
     },
   });
 }

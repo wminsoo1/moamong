@@ -9,13 +9,18 @@ interface Room {
   createdBy: number;
   unreadCount: number;
   isSystem: boolean;
+  memberCount: number;
+  lastSpendingAt: string | null;
+  unreadSpendingCount: number;
+  lastSpendingPreview: string | null;
+  notificationEnabled: boolean;
 }
 
 export function useRooms() {
-  const { data: rooms = [], isLoading } = useQuery<Room[]>({
+  const { data: rooms = [], isLoading, refetch } = useQuery<Room[]>({
     queryKey: roomKeys.all(),
     queryFn: () => apiClient<Room[]>("/api/rooms"),
   });
 
-  return { rooms, isLoading };
+  return { rooms, isLoading, refetch };
 }

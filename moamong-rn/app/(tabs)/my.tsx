@@ -29,13 +29,10 @@ import {
   Bell,
   ChevronRight,
   LogOut,
-  Users,
   LayoutGrid,
   ListTodo,
   Repeat,
-  Share2,
   BookOpen,
-  BookUser,
   UserX,
 } from "lucide-react-native";
 
@@ -160,46 +157,6 @@ export default function MyScreen() {
           </Pressable>
         </View>
 
-        {/* Section: 방 */}
-        <Text style={styles.sectionLabel}>방</Text>
-        <View style={styles.card}>
-          <Pressable
-            onPress={() => router.push("/rooms")}
-            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: "#f9fafb" }]}
-          >
-            <Users size={20} color="#4e5968" />
-            <Text style={styles.menuText}>방 관리</Text>
-            <ChevronRight size={20} color="#adb5bd" />
-          </Pressable>
-          <View style={styles.menuDivider} />
-          <Pressable
-            onPress={() => router.push("/friend-accounts")}
-            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: "#f9fafb" }]}
-          >
-            <BookUser size={20} color="#4e5968" />
-            <Text style={styles.menuText}>친구 가계부 보기</Text>
-            <ChevronRight size={20} color="#adb5bd" />
-          </Pressable>
-          <View style={styles.menuDivider} />
-          <Pressable
-            onPress={() => router.push("/share-settings")}
-            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: "#f9fafb" }]}
-          >
-            <Share2 size={20} color="#4e5968" />
-            <Text style={styles.menuText}>공유할 방</Text>
-            <ChevronRight size={20} color="#adb5bd" />
-          </Pressable>
-          <View style={styles.menuDivider} />
-          <Pressable
-            onPress={() => router.push("/account-share-settings")}
-            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: "#f9fafb" }]}
-          >
-            <BookOpen size={20} color="#4e5968" />
-            <Text style={styles.menuText}>가계부 공개 범위</Text>
-            <ChevronRight size={20} color="#adb5bd" />
-          </Pressable>
-        </View>
-
         {/* Section: 설정 */}
         <Text style={styles.sectionLabel}>설정</Text>
         <View style={styles.card}>
@@ -246,12 +203,26 @@ export default function MyScreen() {
 
           <View style={styles.menuDivider} />
 
+          <Pressable
+            onPress={() => router.push("/account-share-settings")}
+            style={({ pressed }) => [
+              styles.menuRow,
+              pressed && { backgroundColor: "#f9fafb" },
+            ]}
+          >
+            <BookOpen size={20} color="#4e5968" />
+            <Text style={styles.menuText}>가계부 공개 범위</Text>
+            <ChevronRight size={20} color="#adb5bd" />
+          </Pressable>
+
+          <View style={styles.menuDivider} />
+
           {/* 알림 토글 */}
           <View style={styles.menuRow}>
             <Bell size={20} color="#4e5968" />
             <View style={{ flex: 1 }}>
               <Text style={styles.menuText}>알림 수신</Text>
-              <Text style={styles.menuSubText}>방 사람들이 아이템을 공유하면 알림이 와요</Text>
+              <Text style={styles.menuSubText}>방 사람들이 가계부를 작성하면 알림이 와요</Text>
             </View>
             <Switch
               value={me.notificationEnabled}
