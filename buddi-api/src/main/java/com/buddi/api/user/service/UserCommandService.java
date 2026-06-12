@@ -6,6 +6,7 @@ import com.buddi.api.shareditem.repository.SharedItemRepository;
 import com.buddi.api.spending.entity.SpendingType;
 import com.buddi.api.spending.repository.RecurringSpendingRepository;
 import com.buddi.api.spending.repository.SpendingRepository;
+import com.buddi.api.spending.service.SpendingCacheService;
 import com.buddi.api.user.dto.CategoryGroupResponse;
 import com.buddi.api.user.dto.CategoryResponse;
 import com.buddi.api.user.entity.User;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.YearMonth;
 import java.util.List;
 
 @Service
@@ -27,6 +29,7 @@ public class UserCommandService {
     private final RecurringSpendingRepository recurringSpendingRepository;
     private final SharedItemRepository sharedItemRepository;
     private final RoomRepository roomRepository;
+    private final SpendingCacheService spendingCacheService;
 
     @Transactional
     public void saveFcmToken(Long userId, String token) {
@@ -174,6 +177,11 @@ public class UserCommandService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         user.updateHiddenCategoryGroups(groups);
+        YearMonth now = YearMonth.now();
+        user.getShareRoomIds().forEach(roomId -> {
+            spendingCacheService.evictMonthly(roomId, now.getYear(), now.getMonthValue());
+            spendingCacheService.evictMonthly(roomId, now.minusMonths(1).getYear(), now.minusMonths(1).getMonthValue());
+        });
         return user.getHiddenCategoryGroups();
     }
 }
