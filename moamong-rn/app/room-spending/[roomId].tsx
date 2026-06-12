@@ -3,6 +3,7 @@ import {
   View, Text, Pressable, ScrollView, RefreshControl, StyleSheet,
   Image, Modal, StatusBar, TextInput, Alert, Platform, ActivityIndicator,
 } from "react-native";
+import { toast } from "@/src/lib/toast";
 import { useAudioPlayer, useAudioPlayerStatus, AudioModule, RecordingPresets, setAudioModeAsync, setIsAudioActiveAsync } from "expo-audio";
 import { File as FSFile } from "expo-file-system";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -52,10 +53,6 @@ const iv = StyleSheet.create({
 function VoicePlayer({ audioUrl }: { audioUrl: string }) {
   const player = useAudioPlayer(audioUrl, { updateInterval: 500 });
   const status = useAudioPlayerStatus(player);
-
-  useEffect(() => {
-    console.log("[VoicePlayer] isLoaded:", status.isLoaded, "duration:", status.duration, "uri:", audioUrl.slice(-30));
-  }, [status.isLoaded, status.duration]);
 
   const fmt = (s: number) => {
     const secs = Math.floor(s);
@@ -134,7 +131,6 @@ function InlineComments({
     await rec.stop();
     await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
     const uri = rec.uri;
-    console.log("[Voice] recorder.uri =", uri);
     setLocalUri(uri ?? null);
     setRecordState("recorded");
     // recorderRef는 유지 — 파일이 삭제되지 않도록
@@ -170,8 +166,8 @@ function InlineComments({
       addComment.mutate({ type: "VOICE", audioUrl: fileUrl }, {
         onSuccess: () => cancelRecording(),
       });
-    } catch (e) {
-      Alert.alert("업로드 실패", String(e));
+    } catch {
+      toast.show("음성 업로드에 실패했습니다");
     } finally {
       setUploading(false);
     }
