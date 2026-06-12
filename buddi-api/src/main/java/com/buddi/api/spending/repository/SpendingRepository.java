@@ -3,12 +3,17 @@ package com.buddi.api.spending.repository;
 import com.buddi.api.spending.dto.CategoryAmountDto;
 import com.buddi.api.spending.dto.WeeklyAmountDto;
 import com.buddi.api.spending.entity.Spending;
+import com.buddi.api.spending.entity.SpendingComment;
+import com.buddi.api.spending.entity.SpendingLike;
+import com.buddi.api.spending.entity.SpendingType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface SpendingRepository extends JpaRepository<Spending, Long> {
 
@@ -17,6 +22,29 @@ public interface SpendingRepository extends JpaRepository<Spending, Long> {
     boolean existsByUserId(Long userId);
 
     void deleteAllByUserId(Long userId);
+
+    Optional<Spending> findTopByUserIdInAndTypeOrderByCreatedAtDesc(List<Long> userIds, SpendingType type);
+
+    @Query("SELECT COUNT(s) FROM Spending s WHERE s.userId IN :userIds AND s.createdAt > :since AND s.type = com.buddi.api.spending.entity.SpendingType.EXPENSE")
+    long countByUserIdsAndCreatedAtAfter(@Param("userIds") List<Long> userIds, @Param("since") LocalDateTime since);
+
+    @Query("SELECT DISTINCT s FROM Spending s LEFT JOIN FETCH s.comments c WHERE s.id = :id")
+    Optional<Spending> findByIdWithComments(@Param("id") Long id);
+
+    @Query("SELECT DISTINCT s FROM Spending s LEFT JOIN FETCH s.likes WHERE s.id = :id")
+    Optional<Spending> findByIdWithLikes(@Param("id") Long id);
+
+    @Query("SELECT l.spending.id, COUNT(l) FROM SpendingLike l WHERE l.spending.id IN :ids GROUP BY l.spending.id")
+    List<Object[]> countLikesBySpendingIdIn(@Param("ids") List<Long> ids);
+
+    @Query("SELECT l.spending.id FROM SpendingLike l WHERE l.userId = :userId AND l.spending.id IN :ids")
+    List<Long> findLikedSpendingIdsByUserIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
+
+    @Query("SELECT l.spending.id FROM SpendingLike l WHERE l.userId = :userId")
+    List<Long> findAllLikedSpendingIdsByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT c.spending.id, COUNT(c) FROM SpendingComment c WHERE c.spending.id IN :ids GROUP BY c.spending.id")
+    List<Object[]> countCommentsBySpendingIdIn(@Param("ids") List<Long> ids);
 
     @Query("SELECT new com.buddi.api.spending.dto.WeeklyAmountDto(FLOOR((DAY(s.date) - 1) / 7) + 1, SUM(s.amount)) " +
            "FROM Spending s " +

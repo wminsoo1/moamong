@@ -1,14 +1,18 @@
 package com.buddi.api.spending.service;
 
-import com.buddi.api.room.repository.RoomRepository;
+import com.buddi.api.room.dto.RoomMemberResponse;
+import com.buddi.api.room.service.RoomQueryService;
 import com.buddi.api.spending.dto.CategoryAmountDto;
 import com.buddi.api.spending.dto.CategoryStatsResponse;
+import com.buddi.api.spending.dto.RoomSpendingListResponse;
 import com.buddi.api.spending.dto.SpendingListResponse;
 import com.buddi.api.spending.dto.WeeklyAmountDto;
 import com.buddi.api.spending.dto.WeeklyStatsResponse;
+import com.buddi.api.spending.entity.Spending;
+import com.buddi.api.spending.entity.SpendingType;
 import com.buddi.api.spending.repository.SpendingRepository;
 import com.buddi.api.user.entity.CategoryGroupMeta;
-import com.buddi.api.user.repository.UserRepository;
+import com.buddi.api.user.service.UserQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,8 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -26,17 +35,70 @@ import java.util.stream.IntStream;
 public class SpendingQueryService {
 
     private final SpendingRepository spendingRepository;
-    private final RoomRepository roomRepository;
-    private final UserRepository userRepository;
+    private final RoomQueryService roomQueryService;
+    private final UserQueryService userQueryService;
+    private final SpendingCacheService spendingCacheService;
+
+    @Transactional(readOnly = true)
+    public List<RoomSpendingListResponse> getRoomMonthly(Long viewerId, Long roomId, int year, int month) {
+        roomQueryService.validateMember(roomId, viewerId);
+
+        List<RoomSpendingListResponse> base = spendingCacheService.getMonthly(roomId, year, month,
+                k -> loadBaseMonthly(roomId, year, month));
+
+        if (base.isEmpty()) return base;
+
+        Set<Long> likedIds = spendingCacheService.getUserLikes(viewerId,
+                uid -> new HashSet<>(spendingRepository.findAllLikedSpendingIdsByUserId(uid)));
+
+        return base.stream()
+                .map(item -> likedIds.contains(item.getId()) ? item.withLiked(true) : item)
+                .toList();
+    }
+
+    private List<RoomSpendingListResponse> loadBaseMonthly(Long roomId, int year, int month) {
+        List<RoomMemberResponse> members = roomQueryService.getMembers(roomId);
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+
+        record SpendingWithMember(Spending spending, Long userId, String username) {}
+
+        List<SpendingWithMember> all = members.stream()
+                .flatMap(member -> {
+                    List<String> hidden = userQueryService.getHiddenCategoryGroups(member.userId());
+                    return spendingRepository.findByUserIdAndDateBetweenOrderByDateDesc(member.userId(), start, end)
+                            .stream()
+                            .filter(s -> s.getType() == SpendingType.EXPENSE)
+                            .filter(s -> !hidden.contains(s.getCategoryGroup()))
+                            .map(s -> new SpendingWithMember(s, member.userId(), member.username()));
+                })
+                .toList();
+
+        List<Long> ids = all.stream().map(sm -> sm.spending().getId()).toList();
+        Map<Long, Integer> commentCounts = ids.isEmpty() ? Map.of() :
+                spendingRepository.countCommentsBySpendingIdIn(ids).stream()
+                        .collect(Collectors.toMap(row -> (Long) row[0], row -> ((Long) row[1]).intValue()));
+        Map<Long, Integer> likeCounts = ids.isEmpty() ? Map.of() :
+                spendingRepository.countLikesBySpendingIdIn(ids).stream()
+                        .collect(Collectors.toMap(row -> (Long) row[0], row -> ((Long) row[1]).intValue()));
+
+        return all.stream()
+                .map(sm -> new RoomSpendingListResponse(sm.spending(), sm.userId(), sm.username(),
+                        commentCounts.getOrDefault(sm.spending().getId(), 0),
+                        likeCounts.getOrDefault(sm.spending().getId(), 0),
+                        false))
+                .sorted(Comparator.<RoomSpendingListResponse, java.time.LocalDate>comparing(RoomSpendingListResponse::getDate).reversed()
+                        .thenComparing(r -> r.getCreatedAt() != null ? r.getCreatedAt() : java.time.OffsetDateTime.MIN,
+                                Comparator.reverseOrder()))
+                .toList();
+    }
 
     @Transactional(readOnly = true)
     public List<SpendingListResponse> getMemberMonthly(Long viewerId, Long targetUserId, int year, int month) {
-        if (!roomRepository.existsSharedRoom(viewerId, targetUserId)) {
+        if (!roomQueryService.existsSharedRoom(viewerId, targetUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "같은 방에 있지 않습니다");
         }
-        List<String> hidden = userRepository.findById(targetUserId)
-                .map(u -> u.getHiddenCategoryGroups())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        List<String> hidden = userQueryService.getHiddenCategoryGroups(targetUserId);
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
         return spendingRepository.findByUserIdAndDateBetweenOrderByDateDesc(targetUserId, start, end)
@@ -109,6 +171,18 @@ public class SpendingQueryService {
                 .toList();
 
         return new WeeklyStatsResponse(year, month, weeks);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Spending> findLatestSpending(List<Long> userIds) {
+        if (userIds.isEmpty()) return Optional.empty();
+        return spendingRepository.findTopByUserIdInAndTypeOrderByCreatedAtDesc(userIds, SpendingType.EXPENSE);
+    }
+
+    @Transactional(readOnly = true)
+    public long countUnreadSpendings(List<Long> memberIds, LocalDateTime since) {
+        if (memberIds.isEmpty()) return 0;
+        return spendingRepository.countByUserIdsAndCreatedAtAfter(memberIds, since);
     }
 
     private int weekOfMonth(LocalDate date) {

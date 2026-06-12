@@ -49,6 +49,8 @@ public class DataInitializer implements CommandLineRunner {
         initTestRoom();
         initExtraTestRooms();
         initSharedItems();
+        initSpendingInteractions();
+        initHealthChallengeInteractions();
         initBulkData();
     }
 
@@ -209,6 +211,155 @@ public class DataInitializer implements CommandLineRunner {
         return first;
     }
 
+    private void initSpendingInteractions() {
+        User testfriend = userRepository.findByProviderAndProviderId("dummy", "test001").orElse(null);
+        User minjun     = userRepository.findByProviderAndProviderId("dummy", "test002").orElse(null);
+        User jisu       = userRepository.findByProviderAndProviderId("dummy", "test003").orElse(null);
+        if (testfriend == null || minjun == null || jisu == null) return;
+
+        LocalDate may1  = LocalDate.of(2026, 5, 1);
+        LocalDate may31 = LocalDate.of(2026, 5, 31);
+
+        List<Spending> tfSpendings = spendingRepository.findByUserIdAndDateBetweenOrderByDateDesc(testfriend.getId(), may1, may31);
+        List<Spending> mjSpendings = spendingRepository.findByUserIdAndDateBetweenOrderByDateDesc(minjun.getId(),     may1, may31);
+        List<Spending> jiSpendings = spendingRepository.findByUserIdAndDateBetweenOrderByDateDesc(jisu.getId(),      may1, may31);
+        if (tfSpendings.isEmpty() || mjSpendings.isEmpty() || jiSpendings.isEmpty()) return;
+
+        // 멱등성: 이미 댓글이 있으면 스킵
+        Spending firstTarget = tfSpendings.stream().filter(s -> "후드집업".equals(s.getMemo())).findFirst().orElse(null);
+        if (firstTarget == null) return;
+        Spending check = spendingRepository.findByIdWithComments(firstTarget.getId()).orElse(null);
+        if (check != null && !check.getComments().isEmpty()) return;
+
+        Long tfId = testfriend.getId(), mjId = minjun.getId(), jiId = jisu.getId();
+
+        // test001 후드집업 — 댓글 3개 + 좋아요 2개
+        tfSpendings.stream().filter(s -> "후드집업".equals(s.getMemo())).findFirst().ifPresent(s -> {
+            Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
+            sp.addComment(mjId, "이거 무신사 세일 때 샀어? 나도 살까 봐");
+            sp.addComment(jiId, "색깔 뭐야? 나도 비슷한 거 찾고 있었는데");
+            sp.addComment(tfId, "그레이! 39% 할인 때 득템 ㅋㅋ");
+            sp.toggleLike(mjId);
+            sp.toggleLike(jiId);
+            spendingRepository.save(sp);
+        });
+
+        // test001 나이키 운동화 — 댓글 2개 + 좋아요 2개
+        tfSpendings.stream().filter(s -> "나이키 운동화".equals(s.getMemo())).findFirst().ifPresent(s -> {
+            Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
+            sp.addComment(mjId, "이거 얼마야? 나도 사고 싶었는데");
+            sp.addComment(jiId, "러닝화야? 완전 좋아 보인다");
+            sp.toggleLike(mjId);
+            sp.toggleLike(jiId);
+            spendingRepository.save(sp);
+        });
+
+        // test002 아크테릭스 자켓 — 댓글 2개 + 좋아요 2개
+        mjSpendings.stream().filter(s -> "아크테릭스 자켓".equals(s.getMemo())).findFirst().ifPresent(s -> {
+            Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
+            sp.addComment(tfId, "이거 진짜 갖고 싶었는데ㅠㅠ 어디서 샀어?");
+            sp.addComment(jiId, "부럽다 ㅋㅋ 나중에 실물 보여줘");
+            sp.toggleLike(tfId);
+            sp.toggleLike(jiId);
+            spendingRepository.save(sp);
+        });
+
+        // test002 우영미 셔츠 — 댓글 2개 + 좋아요 1개
+        mjSpendings.stream().filter(s -> "우영미 셔츠".equals(s.getMemo())).findFirst().ifPresent(s -> {
+            Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
+            sp.addComment(tfId, "이거 얼마야...? 고퀄이다");
+            sp.addComment(jiId, "진짜 명품 감성 ㅋㅋ");
+            sp.toggleLike(tfId);
+            spendingRepository.save(sp);
+        });
+
+        // test003 단백질 파우더 5kg — 댓글 3개 + 좋아요 2개
+        jiSpendings.stream().filter(s -> "단백질 파우더 5kg".equals(s.getMemo())).findFirst().ifPresent(s -> {
+            Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
+            sp.addComment(tfId, "이거 맛있어? 나도 운동 시작하려는데");
+            sp.addComment(mjId, "5kg이나 샀어? 진지하네 ㅋㅋ");
+            sp.addComment(jiId, "초코맛 추천! 물이랑 섞으면 맛있음");
+            sp.toggleLike(tfId);
+            sp.toggleLike(mjId);
+            spendingRepository.save(sp);
+        });
+    }
+
+    private void initHealthChallengeInteractions() {
+        User testfriend = userRepository.findByProviderAndProviderId("dummy", "test001").orElse(null);
+        User jisu       = userRepository.findByProviderAndProviderId("dummy", "test003").orElse(null);
+        if (testfriend == null || jisu == null) return;
+
+        LocalDate jun1  = LocalDate.of(2026, 6, 1);
+        LocalDate jun30 = LocalDate.of(2026, 6, 30);
+
+        List<Spending> tfSpendings = spendingRepository.findByUserIdAndDateBetweenOrderByDateDesc(testfriend.getId(), jun1, jun30);
+        List<Spending> jiSpendings = spendingRepository.findByUserIdAndDateBetweenOrderByDateDesc(jisu.getId(),      jun1, jun30);
+        if (tfSpendings.isEmpty() || jiSpendings.isEmpty()) return;
+
+        // 멱등성: 헬스장 1일권에 이미 댓글이 있으면 스킵
+        Spending idempotencyCheck = tfSpendings.stream().filter(s -> "헬스장 1일권".equals(s.getMemo())).findFirst().orElse(null);
+        if (idempotencyCheck == null) return;
+        Spending withComments = spendingRepository.findByIdWithComments(idempotencyCheck.getId()).orElse(null);
+        if (withComments != null && !withComments.getComments().isEmpty()) return;
+
+        Long tfId = testfriend.getId(), jiId = jisu.getId();
+
+        // ── jisu 현미밥 + 두부 정식 (6/11, 최신) ──
+        jiSpendings.stream().filter(s -> "현미밥 + 두부 정식".equals(s.getMemo())).findFirst().ifPresent(s -> {
+            Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
+            sp.addComment(tfId, "건강식 제대로 먹네 나도 본받아야겠다");
+            sp.addComment(jiId, "요즘 탄단지 맞춰서 먹으려고 ㅎㅎ 어렵진 않아");
+            sp.toggleLike(tfId);
+            spendingRepository.save(sp);
+        });
+
+        // ── jisu 두유 + 과일 (6/11, 최신) ──
+        jiSpendings.stream().filter(s -> "두유 + 과일".equals(s.getMemo())).findFirst().ifPresent(s -> {
+            Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
+            sp.addComment(tfId, "아침 루틴 완전 좋다 나도 해봐야지");
+            sp.toggleLike(tfId);
+            spendingRepository.save(sp);
+        });
+
+        // ── testfriend 헬스장 1일권 (6/10) ──
+        tfSpendings.stream().filter(s -> "헬스장 1일권".equals(s.getMemo())).findFirst().ifPresent(s -> {
+            Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
+            sp.addComment(jiId, "드디어!! 어떤 운동 했어?");
+            sp.addComment(tfId, "가슴이랑 삼두 했음 ㅋㅋ 생각보다 힘들더라");
+            sp.addComment(jiId, "ㅋㅋㅋ 꾸준히 하면 돼 우리 같이 자극받자");
+            sp.toggleLike(jiId);
+            spendingRepository.save(sp);
+        });
+
+        // ── testfriend 친구 저녁 삼겹살 (6/10) ──
+        tfSpendings.stream().filter(s -> "친구 저녁 삼겹살".equals(s.getMemo())).findFirst().ifPresent(s -> {
+            Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
+            sp.addComment(jiId, "헬스하고 바로 삼겹살?? ㅋㅋㅋㅋ 보상심리인가");
+            sp.addComment(tfId, "치팅데이라고 생각해 😂");
+            sp.toggleLike(jiId);
+            spendingRepository.save(sp);
+        });
+
+        // ── jisu 근육통 파스 (6/10) ──
+        jiSpendings.stream().filter(s -> "근육통 파스".equals(s.getMemo())).findFirst().ifPresent(s -> {
+            Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
+            sp.addComment(tfId, "크로스핏 후유증이야? ㅋㅋ 괜찮아?");
+            sp.addComment(jiId, "허벅지가 죽을 것 같아... 내일 회복되겠지");
+            sp.toggleLike(tfId);
+            spendingRepository.save(sp);
+        });
+
+        // ── jisu 크로스핏 체험 (6/9) ──
+        jiSpendings.stream().filter(s -> "크로스핏 체험".equals(s.getMemo())).findFirst().ifPresent(s -> {
+            Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
+            sp.addComment(tfId, "크로스핏 어때? 나도 해보고 싶었는데");
+            sp.addComment(jiId, "생각보다 재밌어! 강도가 세서 같이 가면 좋을 것 같아");
+            sp.toggleLike(tfId);
+            spendingRepository.save(sp);
+        });
+    }
+
     private void initBulkData() {
         if (userRepository.findByProviderAndProviderId("bulk", "bulk001").isPresent()) return;
 
@@ -316,20 +467,20 @@ public class DataInitializer implements CommandLineRunner {
                 buildSpending(user, SpendingType.EXPENSE, "PETS",      "사료/간식", 38000L, LocalDate.of(2026, 6,  7), "강아지 간식 + 장난감",11, 0),
                 buildSpending(user, SpendingType.EXPENSE, "FASHION",   "의류",      62000L, LocalDate.of(2026, 6,  9), "반바지 구매",       14, 30),
                 buildSpending(user, SpendingType.EXPENSE, "HEALTH",    "건강관리",  25000L, LocalDate.of(2026, 6, 10), "헬스장 1일권",       7, 30),
-                buildSpending(user, SpendingType.EXPENSE, "LEISURE",   "문화생활",  18000L, LocalDate.of(2026, 6, 12), "영화 관람",         15,  0),
-                buildSpending(user, SpendingType.EXPENSE, "FOOD",      "식사",      11000L, LocalDate.of(2026, 6, 13), "편의점 저녁",       19, 30),
-                buildSpending(user, SpendingType.EXPENSE, "HOUSING",   "통신",       9900L, LocalDate.of(2026, 6, 14), "유튜브 프리미엄",    9,  0),
-                buildSpending(user, SpendingType.EXPENSE, "TRANSPORT", "대중교통",   3000L, LocalDate.of(2026, 6, 15), "버스 충전",          8, 30),
-                buildSpending(user, SpendingType.EXPENSE, "PETS",      "병원",      55000L, LocalDate.of(2026, 6, 17), "강아지 병원 검진",  10,  0),
-                buildSpending(user, SpendingType.EXPENSE, "FOOD",      "카페",      12000L, LocalDate.of(2026, 6, 18), "케이크 + 음료",     16, 30),
-                buildSpending(user, SpendingType.EXPENSE, "HEALTH",    "건강관리",  32000L, LocalDate.of(2026, 6, 20), "비타민 C 영양제",   15,  0),
-                buildSpending(user, SpendingType.EXPENSE, "FOOD",      "식사",      28000L, LocalDate.of(2026, 6, 21), "친구 저녁 삼겹살",  19, 30),
-                buildSpending(user, SpendingType.EXPENSE, "TRAVEL",    "국내",     120000L, LocalDate.of(2026, 6, 25), "강원도 당일치기",    7,  0),
-                buildSpending(user, SpendingType.EXPENSE, "DAILY_GOODS","생필품",   22000L, LocalDate.of(2026, 6, 27), "생활용품 마트",     13,  0),
+                buildSpending(user, SpendingType.EXPENSE, "LEISURE",   "문화생활",  18000L, LocalDate.of(2026, 6, 1), "영화 관람",         15,  0),
+                buildSpending(user, SpendingType.EXPENSE, "FOOD",      "식사",      11000L, LocalDate.of(2026, 6, 2), "편의점 저녁",       19, 30),
+                buildSpending(user, SpendingType.EXPENSE, "HOUSING",   "통신",       9900L, LocalDate.of(2026, 6, 3), "유튜브 프리미엄",    9,  0),
+                buildSpending(user, SpendingType.EXPENSE, "TRANSPORT", "대중교통",   3000L, LocalDate.of(2026, 6, 4), "버스 충전",          8, 30),
+                buildSpending(user, SpendingType.EXPENSE, "PETS",      "병원",      55000L, LocalDate.of(2026, 6, 6), "강아지 병원 검진",  10,  0),
+                buildSpending(user, SpendingType.EXPENSE, "FOOD",      "카페",      12000L, LocalDate.of(2026, 6, 7), "케이크 + 음료",     16, 30),
+                buildSpending(user, SpendingType.EXPENSE, "HEALTH",    "건강관리",  32000L, LocalDate.of(2026, 6, 9), "비타민 C 영양제",   15,  0),
+                buildSpending(user, SpendingType.EXPENSE, "FOOD",      "식사",      28000L, LocalDate.of(2026, 6, 10), "친구 저녁 삼겹살",  19, 30),
+                buildSpending(user, SpendingType.EXPENSE, "TRAVEL",    "국내",     120000L, LocalDate.of(2026, 6, 3), "강원도 당일치기",    7,  0),
+                buildSpending(user, SpendingType.EXPENSE, "DAILY_GOODS","생필품",   22000L, LocalDate.of(2026, 6, 5), "생활용품 마트",     13,  0),
                 buildSpending(user, SpendingType.INCOME,  "EMPLOYMENT","월급",    2400000L, LocalDate.of(2026, 6,  1), "6월 월급",           9,  0),
                 buildSpending(user, SpendingType.INCOME,  "INVESTMENT","임대수익",  350000L, LocalDate.of(2026, 6,  5), "원룸 월세",         10,  0),
-                buildSpending(user, SpendingType.INCOME,  "EMPLOYMENT","성과급",   250000L, LocalDate.of(2026, 6, 14), "6월 과외 수입",     18,  0),
-                buildSpending(user, SpendingType.INCOME,  "ETC",       "용돈",      50000L, LocalDate.of(2026, 6, 20), "소액 용돈",         11,  0)
+                buildSpending(user, SpendingType.INCOME,  "EMPLOYMENT","성과급",   250000L, LocalDate.of(2026, 6, 3), "6월 과외 수입",     18,  0),
+                buildSpending(user, SpendingType.INCOME,  "ETC",       "용돈",      50000L, LocalDate.of(2026, 6, 9), "소액 용돈",         11,  0)
             ));
         });
 
@@ -361,16 +512,16 @@ public class DataInitializer implements CommandLineRunner {
                 buildSpending(user, SpendingType.EXPENSE, "BIG_SPENDING","전자기기", 129000L, LocalDate.of(2026, 6,  7), "무선 이어폰 케이스",     11,  0),
                 buildSpending(user, SpendingType.EXPENSE, "TRANSPORT",   "차량",       5800L, LocalDate.of(2026, 6,  9), "심야 택시",               1, 30),
                 buildSpending(user, SpendingType.EXPENSE, "FASHION",     "기타쇼핑", 890000L, LocalDate.of(2026, 6, 10), "보테가베네타 카드지갑",  15,  0),
-                buildSpending(user, SpendingType.EXPENSE, "FOOD",        "식사",      35000L, LocalDate.of(2026, 6, 12), "오마카세 점심",          12, 30),
-                buildSpending(user, SpendingType.EXPENSE, "FASHION",     "의류",      88000L, LocalDate.of(2026, 6, 14), "린넨 셔츠",              14,  0),
-                buildSpending(user, SpendingType.EXPENSE, "LEISURE",     "문화생활",  55000L, LocalDate.of(2026, 6, 16), "뮤지컬 티켓",            19, 30),
-                buildSpending(user, SpendingType.EXPENSE, "FASHION",     "의류",      67000L, LocalDate.of(2026, 6, 18), "에센셜 반바지",          15, 30),
-                buildSpending(user, SpendingType.EXPENSE, "FOOD",        "식사",      18000L, LocalDate.of(2026, 6, 20), "편의점 + 카페",          21,  0),
-                buildSpending(user, SpendingType.EXPENSE, "FASHION",     "의류",     145000L, LocalDate.of(2026, 6, 22), "뉴발란스 574",           14, 30),
-                buildSpending(user, SpendingType.EXPENSE, "FASHION",     "기타쇼핑", 450000L, LocalDate.of(2026, 6, 25), "톰브라운 양말 세트",     16,  0),
+                buildSpending(user, SpendingType.EXPENSE, "FOOD",        "식사",      35000L, LocalDate.of(2026, 6, 1), "오마카세 점심",          12, 30),
+                buildSpending(user, SpendingType.EXPENSE, "FASHION",     "의류",      88000L, LocalDate.of(2026, 6, 3), "린넨 셔츠",              14,  0),
+                buildSpending(user, SpendingType.EXPENSE, "LEISURE",     "문화생활",  55000L, LocalDate.of(2026, 6, 5), "뮤지컬 티켓",            19, 30),
+                buildSpending(user, SpendingType.EXPENSE, "FASHION",     "의류",      67000L, LocalDate.of(2026, 6, 7), "에센셜 반바지",          15, 30),
+                buildSpending(user, SpendingType.EXPENSE, "FOOD",        "식사",      18000L, LocalDate.of(2026, 6, 9), "편의점 + 카페",          21,  0),
+                buildSpending(user, SpendingType.EXPENSE, "FASHION",     "의류",     145000L, LocalDate.of(2026, 6, 11), "뉴발란스 574",           14, 30),
+                buildSpending(user, SpendingType.EXPENSE, "FASHION",     "기타쇼핑", 450000L, LocalDate.of(2026, 6, 3), "톰브라운 양말 세트",     16,  0),
                 buildSpending(user, SpendingType.INCOME,  "EMPLOYMENT",  "월급",    3200000L, LocalDate.of(2026, 6,  1), "6월 월급",                9,  0),
-                buildSpending(user, SpendingType.INCOME,  "ETC",         "기타수입", 320000L, LocalDate.of(2026, 6, 13), "조던 리셀",              14, 30),
-                buildSpending(user, SpendingType.INCOME,  "EMPLOYMENT",  "성과급",   600000L, LocalDate.of(2026, 6, 20), "외주 디자인",            19,  0)
+                buildSpending(user, SpendingType.INCOME,  "ETC",         "기타수입", 320000L, LocalDate.of(2026, 6, 2), "조던 리셀",              14, 30),
+                buildSpending(user, SpendingType.INCOME,  "EMPLOYMENT",  "성과급",   600000L, LocalDate.of(2026, 6, 9), "외주 디자인",            19,  0)
             ));
         });
 
@@ -405,17 +556,17 @@ public class DataInitializer implements CommandLineRunner {
                 buildSpending(user, SpendingType.EXPENSE, "HEALTH",    "건강관리",  35000L, LocalDate.of(2026, 6,  9), "요가 주 2회 수업",       10,  0),
                 buildSpending(user, SpendingType.EXPENSE, "HEALTH",    "병원",      18000L, LocalDate.of(2026, 6, 10), "근육통 파스",            16,  0),
                 buildSpending(user, SpendingType.EXPENSE, "FOOD",      "식사",      15000L, LocalDate.of(2026, 6, 11), "현미밥 + 두부 정식",     12,  0),
-                buildSpending(user, SpendingType.EXPENSE, "FASHION",   "의류",      75000L, LocalDate.of(2026, 6, 13), "젝시믹스 레깅스",        15, 30),
-                buildSpending(user, SpendingType.EXPENSE, "LEISURE",   "문화생활",  15000L, LocalDate.of(2026, 6, 15), "넷플릭스 영화",          21,  0),
-                buildSpending(user, SpendingType.EXPENSE, "HEALTH",    "건강관리",  45000L, LocalDate.of(2026, 6, 17), "오메가3 + 마그네슘",      9,  0),
-                buildSpending(user, SpendingType.EXPENSE, "TRANSPORT", "대중교통",   4100L, LocalDate.of(2026, 6, 18), "지하철",                  7, 30),
-                buildSpending(user, SpendingType.EXPENSE, "HEALTH",    "건강관리",  48000L, LocalDate.of(2026, 6, 20), "크로스핏 체험",          10,  0),
-                buildSpending(user, SpendingType.EXPENSE, "FOOD",      "식사",      11000L, LocalDate.of(2026, 6, 22), "두유 + 과일",             8,  0),
-                buildSpending(user, SpendingType.EXPENSE, "FASHION",   "의류",      58000L, LocalDate.of(2026, 6, 24), "러닝 반바지",            14, 30),
-                buildSpending(user, SpendingType.EXPENSE, "HEALTH",    "건강관리",  39000L, LocalDate.of(2026, 6, 26), "비타민D + 아연",          9, 30),
+                buildSpending(user, SpendingType.EXPENSE, "FASHION",   "의류",      75000L, LocalDate.of(2026, 6, 2), "젝시믹스 레깅스",        15, 30),
+                buildSpending(user, SpendingType.EXPENSE, "LEISURE",   "문화생활",  15000L, LocalDate.of(2026, 6, 4), "넷플릭스 영화",          21,  0),
+                buildSpending(user, SpendingType.EXPENSE, "HEALTH",    "건강관리",  45000L, LocalDate.of(2026, 6, 6), "오메가3 + 마그네슘",      9,  0),
+                buildSpending(user, SpendingType.EXPENSE, "TRANSPORT", "대중교통",   4100L, LocalDate.of(2026, 6, 7), "지하철",                  7, 30),
+                buildSpending(user, SpendingType.EXPENSE, "HEALTH",    "건강관리",  48000L, LocalDate.of(2026, 6, 9), "크로스핏 체험",          10,  0),
+                buildSpending(user, SpendingType.EXPENSE, "FOOD",      "식사",      11000L, LocalDate.of(2026, 6, 11), "두유 + 과일",             8,  0),
+                buildSpending(user, SpendingType.EXPENSE, "FASHION",   "의류",      58000L, LocalDate.of(2026, 6, 2), "러닝 반바지",            14, 30),
+                buildSpending(user, SpendingType.EXPENSE, "HEALTH",    "건강관리",  39000L, LocalDate.of(2026, 6, 4), "비타민D + 아연",          9, 30),
                 buildSpending(user, SpendingType.INCOME,  "EMPLOYMENT","월급",    2800000L, LocalDate.of(2026, 6,  1), "6월 월급",                9,  0),
                 buildSpending(user, SpendingType.INCOME,  "EMPLOYMENT","성과급",   600000L, LocalDate.of(2026, 6, 10), "PT 6회 패키지",          18,  0),
-                buildSpending(user, SpendingType.INCOME,  "EMPLOYMENT","성과급",   250000L, LocalDate.of(2026, 6, 22), "필라테스 특강 강사",     18,  0)
+                buildSpending(user, SpendingType.INCOME,  "EMPLOYMENT","성과급",   250000L, LocalDate.of(2026, 6, 11), "필라테스 특강 강사",     18,  0)
             ));
         });
     }

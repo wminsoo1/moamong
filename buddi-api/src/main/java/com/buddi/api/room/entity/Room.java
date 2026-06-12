@@ -40,6 +40,9 @@ public class Room {
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserRoomRead> readStates = new ArrayList<>();
 
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RoomNotificationSetting> notificationSettings = new ArrayList<>();
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -123,6 +126,24 @@ public class Room {
                 .ifPresentOrElse(
                         UserRoomRead::touch,
                         () -> readStates.add(UserRoomRead.of(this, userId))
+                );
+    }
+
+    public boolean isNotificationEnabled(Long userId) {
+        return notificationSettings.stream()
+                .filter(s -> s.getUserId().equals(userId))
+                .map(RoomNotificationSetting::isEnabled)
+                .findFirst()
+                .orElse(true);
+    }
+
+    public void toggleNotification(Long userId) {
+        notificationSettings.stream()
+                .filter(s -> s.getUserId().equals(userId))
+                .findFirst()
+                .ifPresentOrElse(
+                        s -> s.setEnabled(!s.isEnabled()),
+                        () -> notificationSettings.add(RoomNotificationSetting.of(this, userId, false))
                 );
     }
 

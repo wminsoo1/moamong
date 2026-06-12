@@ -2,6 +2,7 @@ package com.buddi.api.shareditem.service;
 
 import com.buddi.api.shareditem.dto.FeedPageResponse;
 import com.buddi.api.shareditem.dto.ReactionSummary;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import com.buddi.api.shareditem.dto.SharedItemCommentResponse;
 import com.buddi.api.shareditem.dto.SharedItemFeedResponse;
@@ -146,5 +147,10 @@ public class SharedItemQueryService {
                         c.getContent(),
                         c.getCreatedAt().atOffset(ZoneOffset.UTC).withOffsetSameInstant(ZoneOffset.ofHours(9))))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public long countUnread(Long roomId, Long userId, LocalDateTime since) {
+        return sharedItemRepository.countUnreadSharedItems(roomId, userId, since);
     }
 }

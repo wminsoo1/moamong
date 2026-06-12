@@ -4,7 +4,6 @@ import com.buddi.api.room.dto.RoomMemberResponse;
 import com.buddi.api.room.dto.RoomResponse;
 import com.buddi.api.room.entity.Room;
 import com.buddi.api.room.repository.RoomRepository;
-import com.buddi.api.shareditem.repository.SharedItemRepository;
 import com.buddi.api.user.service.UserQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,17 +20,26 @@ public class RoomQueryService {
 
     private final RoomRepository roomRepository;
     private final UserQueryService userQueryService;
-    private final SharedItemRepository sharedItemRepository;
+
+    public record RoomEntry(Long roomId, String name, String inviteCode, Long createdBy, boolean isSystem,
+                            int memberCount, List<Long> memberIds, LocalDateTime lastReadAt) {}
 
     @Transactional(readOnly = true)
-    public List<RoomResponse> getMyRooms(Long userId) {
-        return roomRepository.findByUserId(userId)
-                .stream()
+    public List<RoomEntry> getRoomsForUser(Long userId) {
+        return roomRepository.findByUserId(userId).stream()
                 .map(room -> {
-                    LocalDateTime since = room.getLastReadAt(userId).orElse(LocalDateTime.of(2000, 1, 1, 0, 0, 0));
-                    int unread = (int) sharedItemRepository.countUnreadSharedItems(room.getId(), userId, since);
-                    return new RoomResponse(room, unread);
+                    List<Long> memberIds = room.getMembers().stream().map(m -> m.getUserId()).toList();
+                    LocalDateTime lastReadAt = room.getLastReadAt(userId).orElse(LocalDateTime.of(2000, 1, 1, 0, 0, 0));
+                    return new RoomEntry(room.getId(), room.getName(), room.getInviteCode(),
+                            room.getCreatedBy(), room.isSystem(), memberIds.size(), memberIds, lastReadAt);
                 })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> getRoomIds(Long userId) {
+        return roomRepository.findByUserId(userId).stream()
+                .map(Room::getId)
                 .toList();
     }
 
@@ -76,5 +84,10 @@ public class RoomQueryService {
         return roomRepository.findById(roomId)
                 .map(room -> room.hasMember(userId))
                 .orElse(false);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsSharedRoom(Long userId1, Long userId2) {
+        return roomRepository.existsSharedRoom(userId1, userId2);
     }
 }

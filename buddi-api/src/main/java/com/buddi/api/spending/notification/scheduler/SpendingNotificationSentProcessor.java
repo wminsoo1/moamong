@@ -1,8 +1,9 @@
-package com.buddi.api.shareditem.notification.scheduler;
+package com.buddi.api.spending.notification.scheduler;
 
 import com.buddi.api.global.fcm.FcmService;
-import com.buddi.api.shareditem.notification.entity.NotificationSent;
-import com.buddi.api.shareditem.notification.repository.NotificationSentRepository;
+import com.buddi.api.spending.notification.entity.SpendingNotificationSent;
+import com.buddi.api.spending.notification.repository.SpendingNotificationSentRepository;
+import com.buddi.api.user.entity.User;
 import com.buddi.api.user.service.UserQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,19 +14,19 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class NotificationSentProcessor {
+public class SpendingNotificationSentProcessor {
 
-    private final NotificationSentRepository notificationSentRepository;
+    private final SpendingNotificationSentRepository spendingNotificationSentRepository;
     private final UserQueryService userQueryService;
     private final FcmService fcmService;
 
     @Async("notificationExecutor")
     @Transactional
     public void process(Long sentId) {
-        NotificationSent sent = notificationSentRepository.findById(sentId).orElse(null);
+        SpendingNotificationSent sent = spendingNotificationSentRepository.findById(sentId).orElse(null);
         if (sent == null) return;
 
-        com.buddi.api.user.entity.User receiver = userQueryService.findById(sent.getReceiverId());
+        User receiver = userQueryService.findById(sent.getReceiverId());
         if (!receiver.isNotificationEnabled()) {
             log.info("알림 비활성화 상태 - 알림 스킵 (sentId: {}, receiverId: {})", sentId, sent.getReceiverId());
             sent.markProcessed();
@@ -39,13 +40,13 @@ public class NotificationSentProcessor {
             return;
         }
 
-        com.buddi.api.user.entity.User sender = userQueryService.findById(sent.getSenderId());
+        User sender = userQueryService.findById(sent.getSenderId());
         if (sender.isDeleted()) {
             log.info("발신자 탈퇴 - 알림 스킵 (sentId: {}, senderId: {})", sentId, sent.getSenderId());
             sent.markProcessed();
             return;
         }
-        fcmService.sendHotItemNotification(token, sender.getUsername(), sent.getAmount(), sent.getUrl(), sent.getTitle(), sent.getMemo());
+        fcmService.sendSpendingNotification(token, sender.getUsername(), sent.getAmount(), sent.getCategoryName(), sent.getMemo());
         sent.markProcessed();
     }
 }

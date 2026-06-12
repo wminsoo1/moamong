@@ -166,8 +166,7 @@ public class UserController {
     public ResponseEntity<Map<String, List<Long>>> getShareSettings(Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         List<Long> savedIds = userQueryService.getShareRoomIds(principal.getUserId());
-        List<Long> myRoomIds = roomQueryService.getMyRooms(principal.getUserId())
-                .stream().map(r -> r.id()).toList();
+        List<Long> myRoomIds = roomQueryService.getRoomIds(principal.getUserId());
         List<Long> validIds = savedIds.stream().filter(myRoomIds::contains).toList();
         return ResponseEntity.ok(Map.of("roomIds", validIds));
     }

@@ -5,9 +5,13 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "spendings",
@@ -46,6 +50,13 @@ public class Spending {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @OneToMany(mappedBy = "spending", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
+    private List<SpendingComment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "spending", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SpendingLike> likes = new ArrayList<>();
+
     @Builder(access = AccessLevel.PRIVATE)
     private Spending(Long userId, SpendingType type, String categoryName,
                      String categoryGroup, Long amount, LocalDate date, String memo, String imageUrl,
@@ -64,6 +75,31 @@ public class Spending {
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
+    }
+
+    public SpendingComment addComment(Long userId, String content) {
+        if (content == null || content.isBlank()) throw new IllegalArgumentException("댓글 내용을 입력해주세요");
+        SpendingComment comment = SpendingComment.of(this, userId, content);
+        comments.add(comment);
+        return comment;
+    }
+
+    public boolean isLikedBy(Long userId) {
+        return likes.stream().anyMatch(l -> l.getUserId().equals(userId));
+    }
+
+    public void toggleLike(Long userId) {
+        boolean removed = likes.removeIf(l -> l.getUserId().equals(userId));
+        if (!removed) likes.add(SpendingLike.of(this, userId));
+    }
+
+    public void removeComment(Long commentId, Long requesterId) {
+        SpendingComment comment = comments.stream()
+                .filter(c -> c.getId().equals(commentId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "댓글이 없습니다"));
+        comment.validateOwner(requesterId);
+        comments.remove(comment);
     }
 
     public void update(SpendingType type, String categoryName, String categoryGroup,

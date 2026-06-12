@@ -6,7 +6,11 @@ import com.buddi.api.room.dto.RoomJoinRequest;
 import com.buddi.api.room.dto.RoomMemberResponse;
 import com.buddi.api.room.dto.RoomResponse;
 import com.buddi.api.room.service.RoomCommandService;
+import com.buddi.api.room.service.RoomFacadeService;
+import com.buddi.api.room.service.RoomNotificationService;
 import com.buddi.api.room.service.RoomQueryService;
+import com.buddi.api.spending.dto.RoomSpendingListResponse;
+import com.buddi.api.spending.service.SpendingQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -21,6 +25,9 @@ public class RoomController {
 
     private final RoomCommandService roomCommandService;
     private final RoomQueryService roomQueryService;
+    private final RoomFacadeService roomFacadeService;
+    private final RoomNotificationService roomNotificationService;
+    private final SpendingQueryService spendingQueryService;
 
     @PostMapping
     public ResponseEntity<RoomResponse> create(@RequestBody RoomCreateRequest request,
@@ -39,7 +46,7 @@ public class RoomController {
     @GetMapping
     public ResponseEntity<List<RoomResponse>> getMyRooms(Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        return ResponseEntity.ok(roomQueryService.getMyRooms(principal.getUserId()));
+        return ResponseEntity.ok(roomFacadeService.getMyRooms(principal.getUserId()));
     }
 
     @GetMapping("/{roomId}/members")
@@ -100,5 +107,31 @@ public class RoomController {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         roomCommandService.deleteRoom(roomId, principal.getUserId());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{roomId}/notifications/me")
+    public ResponseEntity<java.util.Map<String, Boolean>> getNotificationSetting(
+            @PathVariable Long roomId, Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        boolean enabled = roomNotificationService.isEnabled(principal.getUserId(), roomId);
+        return ResponseEntity.ok(java.util.Map.of("enabled", enabled));
+    }
+
+    @PostMapping("/{roomId}/notifications/me/toggle")
+    public ResponseEntity<java.util.Map<String, Boolean>> toggleNotification(
+            @PathVariable Long roomId, Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        boolean enabled = roomNotificationService.toggle(principal.getUserId(), roomId);
+        return ResponseEntity.ok(java.util.Map.of("enabled", enabled));
+    }
+
+    @GetMapping("/{roomId}/spendings")
+    public ResponseEntity<List<RoomSpendingListResponse>> getRoomSpendings(
+            @PathVariable Long roomId,
+            @RequestParam int year,
+            @RequestParam int month,
+            Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(spendingQueryService.getRoomMonthly(principal.getUserId(), roomId, year, month));
     }
 }

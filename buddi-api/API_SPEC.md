@@ -505,6 +505,50 @@ DELETE /api/spendings/{id}
 
 ---
 
+### 친구 월별 지출 조회
+```
+GET /api/spendings/members/{userId}?year={year}&month={month}
+```
+
+같은 방에 있는 상대방의 해당 월 지출(EXPENSE)을 조회합니다. 상대방이 숨긴 카테고리는 제외됩니다.
+
+**Response:** 월별 지출 조회 Response와 동일한 구조의 배열 (`userId`, `username` 필드 없음)
+
+**에러**
+
+| 상태코드 | 조건 |
+|---|---|
+| `403` | 같은 방에 있지 않음 |
+
+---
+
+### 계정 공개 설정 조회
+```
+GET /api/users/me/account-share-settings
+```
+
+**Response**
+```json
+{ "hiddenCategories": ["FOOD", "LEISURE"] }
+```
+- `hiddenCategories`: 방 지출 공유 시 숨길 대카테고리 groupKey 목록
+
+---
+
+### 계정 공개 설정 변경
+```
+PUT /api/users/me/account-share-settings
+```
+
+**Request**
+```json
+{ "hiddenCategories": ["FOOD", "LEISURE"] }
+```
+
+**Response:** 변경된 설정 (조회 Response와 동일)
+
+---
+
 ## 피드
 
 ### 공유 카테고리 목록 조회
@@ -672,12 +716,63 @@ GET /api/rooms
     "inviteCode": "AB12CD34",
     "createdBy": 1,
     "isSystem": false,
-    "unreadCount": 3
+    "memberCount": 3,
+    "unreadCount": 2,
+    "unreadSpendingCount": 5,
+    "lastSpendingAt": "2026-06-11T09:30:00Z",
+    "lastSpendingPreview": "점심 국밥  -14,000원"
   }
 ]
 ```
 - `isSystem`: 시스템 공용 방이면 `true`
-- `unreadCount`: 마지막 읽음 이후 새로 공유된 아이템 수
+- `memberCount`: 현재 방 멤버 수
+- `unreadCount`: 마지막 읽음(`POST /read`) 이후 새로 공유된 핫템 수
+- `unreadSpendingCount`: 마지막 읽음 이후 방 멤버들이 추가한 지출(EXPENSE) 수
+- `lastSpendingAt`: 방 멤버 중 가장 최근 지출의 `createdAt` (없으면 `null`)
+- `lastSpendingPreview`: 가장 최근 지출의 요약 문자열 (없으면 `null`)
+
+---
+
+### 방 통합 지출 조회
+```
+GET /api/rooms/{roomId}/spendings?year={year}&month={month}
+```
+
+방 멤버 전체의 해당 월 지출(EXPENSE)을 합산해 반환합니다. 각 멤버의 숨김 카테고리는 제외됩니다.
+
+| 파라미터 | 필수 | 설명 |
+|---|---|---|
+| `year` | 필수 | 조회 연도 |
+| `month` | 필수 | 조회 월 (1~12) |
+
+**Response**
+```json
+[
+  {
+    "id": 42,
+    "type": "EXPENSE",
+    "categoryName": "식사",
+    "categoryGroup": "FOOD",
+    "categoryGroupLabel": "식비",
+    "amount": 14000,
+    "date": "2026-06-02",
+    "memo": "점심 국밥",
+    "imageUrl": null,
+    "createdAt": "2026-06-02T12:30:00Z",
+    "userId": 1,
+    "username": "testfriend"
+  }
+]
+```
+- 날짜 내림차순 → `createdAt` 내림차순 정렬
+- `userId`, `username`: 해당 지출을 작성한 멤버 정보
+
+**에러**
+
+| 상태코드 | 조건 |
+|---|---|
+| `403` | 방 멤버가 아님 |
+| `404` | 방 없음 |
 
 ---
 
