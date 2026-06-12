@@ -2,12 +2,19 @@ import { useState } from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
-import { ChevronLeft, Copy, RefreshCw } from "lucide-react-native";
+import { ChevronLeft, Copy, RefreshCw, UserMinus, LogOut, Trash2 } from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
 import { toast } from "@/src/lib/toast";
 import { useCurrentUser } from "@/src/features/user/queries/useCurrentUser";
 import { useRegenerateInviteCode } from "@/src/features/room/mutations/useRegenerateInviteCode";
 import { useRoomNotification, useToggleRoomNotification } from "@/src/features/room/queries/useRoomNotification";
+import { useRoomMembers } from "@/src/features/room/queries/useRoomMembers";
+import { useKickMember } from "@/src/features/room/mutations/useKickMember";
+import { useLeaveRoom } from "@/src/features/room/mutations/useLeaveRoom";
+import { useDeleteRoom } from "@/src/features/room/mutations/useDeleteRoom";
+
+const COLORS = ["#5B5FC7", "#107C10", "#C43E1C", "#038387", "#8764B8", "#881798", "#004E8C"];
+const getAvatarColor = (userId: number) => COLORS[userId % COLORS.length];
 
 export default function RoomSpendingSettingsScreen() {
   const { roomId, name, inviteCode, createdBy } = useLocalSearchParams<{
@@ -21,6 +28,10 @@ export default function RoomSpendingSettingsScreen() {
   const regenerateCode = useRegenerateInviteCode();
   const { data: notificationEnabled = true } = useRoomNotification(rid);
   const toggleNotification = useToggleRoomNotification(rid);
+  const { data: members = [] } = useRoomMembers(rid);
+  const kickMember = useKickMember(rid);
+  const leaveRoom = useLeaveRoom();
+  const deleteRoom = useDeleteRoom();
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(currentCode);
@@ -37,6 +48,33 @@ export default function RoomSpendingSettingsScreen() {
         }),
       },
     ]);
+  };
+
+  const handleKick = (targetUserId: number, targetName: string) => {
+    Alert.alert("멤버 내보내기", `${targetName}님을 방에서 내보낼까요?`, [
+      { text: "취소", style: "cancel" },
+      { text: "내보내기", style: "destructive", onPress: () => kickMember.mutate(targetUserId) },
+    ]);
+  };
+
+  const handleLeaveOrDelete = () => {
+    if (isOwner) {
+      Alert.alert("방 삭제", "방을 삭제하면 모든 내역이 사라져요.", [
+        { text: "취소", style: "cancel" },
+        {
+          text: "삭제", style: "destructive",
+          onPress: () => deleteRoom.mutate(rid, { onSuccess: () => router.navigate("/(tabs)/room") }),
+        },
+      ]);
+    } else {
+      Alert.alert("방 나가기", "이 방을 나가시겠어요?", [
+        { text: "취소", style: "cancel" },
+        {
+          text: "나가기", style: "destructive",
+          onPress: () => leaveRoom.mutate(rid, { onSuccess: () => router.navigate("/(tabs)/room") }),
+        },
+      ]);
+    }
   };
 
   return (
@@ -83,6 +121,49 @@ export default function RoomSpendingSettingsScreen() {
           />
         </View>
 
+        {/* 멤버 */}
+        <Text style={styles.sectionLabel}>멤버</Text>
+        <View style={styles.card}>
+          {members.map((member, idx) => {
+            const isMe = member.userId === me?.id;
+            const isMemberOwner = member.userId === Number(createdBy);
+            const canKick = isOwner && !isMe && !isMemberOwner;
+            return (
+              <View key={member.userId}>
+                {idx > 0 && <View style={styles.divider} />}
+                <View style={styles.memberRow}>
+                  <View style={[styles.avatar, { backgroundColor: getAvatarColor(member.userId) }]}>
+                    <Text style={styles.avatarText}>{member.username.charAt(0)}</Text>
+                  </View>
+                  <Text style={styles.memberName}>{member.username}</Text>
+                  {isMe && <View style={styles.badge}><Text style={styles.badgeText}>나</Text></View>}
+                  {isMemberOwner && <View style={[styles.badge, styles.ownerBadge]}><Text style={[styles.badgeText, styles.ownerBadgeText]}>방장</Text></View>}
+                  {canKick && (
+                    <Pressable
+                      onPress={() => handleKick(member.userId, member.username)}
+                      style={({ pressed }) => [styles.kickBtn, pressed && { opacity: 0.6 }]}
+                      hitSlop={8}
+                    >
+                      <UserMinus size={16} color="#f04452" />
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+
+        {/* 방 나가기 / 삭제 */}
+        <Pressable
+          onPress={handleLeaveOrDelete}
+          style={({ pressed }) => [styles.dangerBtn, pressed && { opacity: 0.7 }]}
+        >
+          {isOwner
+            ? <><Trash2 size={16} color="#f04452" /><Text style={styles.dangerText}>방 삭제</Text></>
+            : <><LogOut size={16} color="#f04452" /><Text style={styles.dangerText}>방 나가기</Text></>
+          }
+        </Pressable>
+
         <View style={{ height: 60 }} />
       </ScrollView>
     </SafeAreaView>
@@ -120,4 +201,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18, paddingVertical: 14, marginBottom: 24,
   },
   settingLabel: { fontSize: 15, fontWeight: "500", color: "#191f28" },
+  card: {
+    backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#f2f4f6",
+    overflow: "hidden", marginBottom: 24,
+  },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: "#e5e8eb", marginLeft: 68 },
+  memberRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
+  avatar: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  avatarText: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  memberName: { flex: 1, fontSize: 15, fontWeight: "600", color: "#191f28" },
+  badge: { backgroundColor: "#f2f4f6", borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  badgeText: { fontSize: 11, fontWeight: "700", color: "#8b95a1" },
+  ownerBadge: { backgroundColor: "#e8f3ff" },
+  ownerBadgeText: { color: "#3182f6" },
+  kickBtn: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
+  dangerBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    backgroundColor: "#fff0f1", borderRadius: 16, paddingVertical: 16,
+  },
+  dangerText: { fontSize: 15, fontWeight: "700", color: "#f04452" },
 });
