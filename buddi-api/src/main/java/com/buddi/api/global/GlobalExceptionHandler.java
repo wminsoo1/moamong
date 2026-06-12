@@ -1,5 +1,6 @@
 package com.buddi.api.global;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -15,12 +16,12 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<Map<String, String>> handleResponseStatus(ResponseStatusException e) {
+    public ResponseEntity<Map<String, String>> handleResponseStatus(ResponseStatusException e, HttpServletRequest request) {
         String message = e.getReason() != null ? e.getReason() : "요청에 실패했습니다.";
         if (e.getStatusCode().is5xxServerError()) {
-            log.error("Server error [{}]: {}", e.getStatusCode().value(), message, e);
+            log.error("Server error [{}] {} {}: {}", e.getStatusCode().value(), request.getMethod(), request.getRequestURI(), message, e);
         } else {
-            log.warn("Client error [{}]: {}", e.getStatusCode().value(), message);
+            log.warn("Client error [{}] {} {}: {}", e.getStatusCode().value(), request.getMethod(), request.getRequestURI(), message, e);
         }
         return ResponseEntity.status(e.getStatusCode()).body(Map.of("message", message));
     }
