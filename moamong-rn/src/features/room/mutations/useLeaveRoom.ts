@@ -8,7 +8,7 @@ export function useLeaveRoom() {
     mutationFn: (roomId: number) =>
       apiClient(`/api/rooms/${roomId}/leave`, { method: "DELETE" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: roomKeys.all() });
+      queryClient.invalidateQueries({ queryKey: roomKeys.all(), exact: true });
     },
   });
 }

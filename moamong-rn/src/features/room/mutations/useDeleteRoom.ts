@@ -9,7 +9,7 @@ export function useDeleteRoom() {
     mutationFn: (roomId: number) =>
       apiClient(`/api/rooms/${roomId}`, { method: "DELETE" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: roomKeys.all() });
+      queryClient.invalidateQueries({ queryKey: roomKeys.all(), exact: true });
     },
     onError: (e: Error) => toast.show(e.message),
   });
