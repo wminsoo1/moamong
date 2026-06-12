@@ -43,6 +43,7 @@ public class SpendingComment {
         comment.spending = spending;
         comment.userId = userId;
         comment.content = content;
+        comment.createdAt = LocalDateTime.now();
         return comment;
     }
 
