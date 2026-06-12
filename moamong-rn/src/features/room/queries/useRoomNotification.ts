@@ -9,6 +9,7 @@ export function useRoomNotification(roomId: number) {
     queryKey: notificationKey(roomId),
     queryFn: () => apiClient<{ enabled: boolean }>(`/api/rooms/${roomId}/notifications/me`),
     select: (data) => data.enabled,
+    retry: (_, error) => (error as any)?.status !== 404,
   });
 }
 

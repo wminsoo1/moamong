@@ -61,10 +61,12 @@ export async function apiClient<T>(url: string, options?: RequestInit): Promise<
 
   if (!res.ok) {
     console.warn(`[API] [Error] [${url}] [${res.status}]`, body);
-    if (res.status >= 500) {
-      throw new Error(body?.message ?? "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-    }
-    throw new Error(body?.message ?? "요청에 실패했습니다.");
+    const message = res.status >= 500
+      ? (body?.message ?? "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
+      : (body?.message ?? "요청에 실패했습니다.");
+    const error = new Error(message) as Error & { status: number };
+    error.status = res.status;
+    throw error;
   }
 
   return body as T;

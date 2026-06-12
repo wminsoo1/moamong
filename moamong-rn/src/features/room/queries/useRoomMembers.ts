@@ -12,5 +12,6 @@ export function useRoomMembers(roomId: number) {
     queryKey: roomKeys.members(roomId),
     queryFn: () => apiClient<RoomMember[]>(`/api/rooms/${roomId}/members`),
     enabled: !!roomId && !isNaN(roomId),
+    retry: (_, error) => (error as any)?.status !== 404,
   });
 }

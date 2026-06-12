@@ -8,5 +8,6 @@ export function useRoomSpendings(roomId: number, year: number, month: number) {
     queryKey: spendingKeys.roomMonthly(roomId, year, month),
     queryFn: () => apiClient<RoomSpending[]>(`/api/rooms/${roomId}/spendings?year=${year}&month=${month}`),
     enabled: !!roomId && !isNaN(roomId),
+    retry: (_, error) => (error as any)?.status !== 404,
   });
 }
