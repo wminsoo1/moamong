@@ -27,8 +27,13 @@ public class SpendingComment {
     @Column(nullable = false)
     private Long userId;
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false)
+    private String type; // TEXT | VOICE
+
+    @Column(length = 200)
     private String content;
+
+    private String audioUrl;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -42,7 +47,18 @@ public class SpendingComment {
         SpendingComment comment = new SpendingComment();
         comment.spending = spending;
         comment.userId = userId;
+        comment.type = "TEXT";
         comment.content = content;
+        comment.createdAt = LocalDateTime.now();
+        return comment;
+    }
+
+    public static SpendingComment ofVoice(Spending spending, Long userId, String audioUrl) {
+        SpendingComment comment = new SpendingComment();
+        comment.spending = spending;
+        comment.userId = userId;
+        comment.type = "VOICE";
+        comment.audioUrl = audioUrl;
         comment.createdAt = LocalDateTime.now();
         return comment;
     }

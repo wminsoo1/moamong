@@ -1,5 +1,6 @@
 package com.buddi.api.spending.service;
 
+import com.buddi.api.global.s3.PresignedUrlService;
 import com.buddi.api.room.service.RoomQueryService;
 import com.buddi.api.spending.dto.SpendingCommentRequest;
 import com.buddi.api.spending.dto.SpendingCommentResponse;
@@ -26,6 +27,7 @@ public class SpendingCommentService {
     private final SpendingRepository spendingRepository;
     private final RoomQueryService roomQueryService;
     private final UserQueryService userQueryService;
+    private final PresignedUrlService presignedUrlService;
 
     @Transactional(readOnly = true)
     public List<SpendingCommentResponse> getComments(Long spendingId) {
@@ -43,7 +45,9 @@ public class SpendingCommentService {
                 c.getId(),
                 c.getUserId(),
                 usernameMap.getOrDefault(c.getUserId(), "알 수 없음"),
+                c.getType(),
                 c.getContent(),
+                c.getAudioUrl(),
                 c.getCreatedAt().atOffset(ZoneOffset.UTC)
         )).toList();
     }
@@ -53,7 +57,19 @@ public class SpendingCommentService {
         roomQueryService.validateMember(roomId, userId);
         Spending spending = spendingRepository.findById(spendingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "지출이 없습니다"));
-        SpendingComment comment = spending.addComment(userId, request.getContent());
+
+        SpendingComment comment;
+        if ("VOICE".equals(request.getEffectiveType())) {
+            if (request.getAudioUrl() == null || request.getAudioUrl().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "오디오 URL을 입력해주세요");
+            }
+            comment = spending.addVoiceComment(userId, request.getAudioUrl());
+        } else {
+            if (request.getContent() == null || request.getContent().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "댓글 내용을 입력해주세요");
+            }
+            comment = spending.addComment(userId, request.getContent());
+        }
         spendingRepository.saveAndFlush(spending);
 
         String username = userQueryService.findById(userId).getUsername();
@@ -61,7 +77,9 @@ public class SpendingCommentService {
                 comment.getId(),
                 userId,
                 username,
+                comment.getType(),
                 comment.getContent(),
+                comment.getAudioUrl(),
                 comment.getCreatedAt().atOffset(ZoneOffset.UTC)
         );
     }
@@ -70,8 +88,15 @@ public class SpendingCommentService {
     public void deleteComment(Long spendingId, Long commentId, Long userId) {
         Spending spending = spendingRepository.findByIdWithComments(spendingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "지출이 없습니다"));
-        spending.removeComment(commentId, userId);
+        SpendingComment comment = spending.getComments().stream()
+                .filter(c -> c.getId().equals(commentId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "댓글이 없습니다"));
+        comment.validateOwner(userId);
+        if ("VOICE".equals(comment.getType())) {
+            presignedUrlService.deleteByUrl(comment.getAudioUrl());
+        }
+        spending.getComments().remove(comment);
         spendingRepository.save(spending);
     }
-
 }

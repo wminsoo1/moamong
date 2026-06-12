@@ -10,7 +10,9 @@ export interface SpendingComment {
   id: number;
   userId: number;
   username: string;
-  content: string;
+  type: "TEXT" | "VOICE";
+  content: string | null;
+  audioUrl: string | null;
   createdAt: string;
 }
 

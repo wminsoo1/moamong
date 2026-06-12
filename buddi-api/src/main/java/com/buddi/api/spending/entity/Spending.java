@@ -84,6 +84,13 @@ public class Spending {
         return comment;
     }
 
+    public SpendingComment addVoiceComment(Long userId, String audioUrl) {
+        if (audioUrl == null || audioUrl.isBlank()) throw new IllegalArgumentException("오디오 URL을 입력해주세요");
+        SpendingComment comment = SpendingComment.ofVoice(this, userId, audioUrl);
+        comments.add(comment);
+        return comment;
+    }
+
     public boolean isLikedBy(Long userId) {
         return likes.stream().anyMatch(l -> l.getUserId().equals(userId));
     }

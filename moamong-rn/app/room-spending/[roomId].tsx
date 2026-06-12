@@ -1,14 +1,17 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   View, Text, Pressable, ScrollView, RefreshControl, StyleSheet,
-  Image, Modal, StatusBar, TextInput, Alert,
+  Image, Modal, StatusBar, TextInput, Alert, Platform, ActivityIndicator,
 } from "react-native";
+import { useAudioPlayer, useAudioPlayerStatus, AudioModule, RecordingPresets, setAudioModeAsync, setIsAudioActiveAsync } from "expo-audio";
+import { File as FSFile } from "expo-file-system";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import {
   ChevronLeft, ChevronLeft as Prev, ChevronRight as Next,
-  Camera, X, Settings, MessageCircle, Heart, ArrowUp, Trash2,
+  Camera, X, Settings, MessageCircle, Heart, ArrowUp, Trash2, Mic, Play, Pause,
 } from "lucide-react-native";
+import { apiClient } from "@/src/lib/api";
 import { useRoomSpendings } from "@/src/features/spending/queries/useRoomSpendings";
 import { useSpendingComments } from "@/src/features/spending/queries/useSpendingComments";
 import { useAddComment } from "@/src/features/spending/mutations/useAddComment";
@@ -46,6 +49,51 @@ const iv = StyleSheet.create({
   img: { width: "100%", height: "80%" },
 });
 
+function VoicePlayer({ audioUrl }: { audioUrl: string }) {
+  const player = useAudioPlayer(audioUrl, { updateInterval: 500 });
+  const status = useAudioPlayerStatus(player);
+
+  useEffect(() => {
+    console.log("[VoicePlayer] isLoaded:", status.isLoaded, "duration:", status.duration, "uri:", audioUrl.slice(-30));
+  }, [status.isLoaded, status.duration]);
+
+  const fmt = (s: number) => {
+    const secs = Math.floor(s);
+    return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+  };
+
+  const display = status.currentTime > 0
+    ? fmt(status.currentTime)
+    : status.duration > 0 ? fmt(status.duration) : "--:--";
+
+  const toggle = async () => {
+    if (status.playing) {
+      player.pause();
+    } else {
+      await setIsAudioActiveAsync(true);
+      player.play();
+    }
+  };
+
+  return (
+    <View style={vs.row}>
+      <Pressable onPress={toggle} hitSlop={8}>
+        {status.playing
+          ? <Pause size={18} color="#3182f6" />
+          : <Play size={18} color="#3182f6" />}
+      </Pressable>
+      <View style={vs.bar} />
+      <Text style={vs.time}>{display}</Text>
+    </View>
+  );
+}
+
+const vs = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#f2f4f6", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 },
+  bar: { flex: 1, height: 3, backgroundColor: "#3182f6", borderRadius: 2, opacity: 0.3 },
+  time: { fontSize: 12, color: "#4e5968", fontWeight: "600", minWidth: 36 },
+});
+
 function InlineComments({
   spending, roomId, currentUserId, commentText, onCommentTextChange,
 }: {
@@ -59,10 +107,80 @@ function InlineComments({
   const addComment = useAddComment(roomId, spending.id);
   const deleteComment = useDeleteComment(spending.id, roomId);
 
+  const recorderRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [recordState, setRecordState] = useState<"idle" | "recording" | "recorded">("idle");
+  const [localUri, setLocalUri] = useState<string | null>(null);
+  const [seconds, setSeconds] = useState(0);
+  const [uploading, setUploading] = useState(false);
+
+  const startRecording = async () => {
+    const { granted } = await AudioModule.requestRecordingPermissionsAsync();
+    if (!granted) return;
+    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+    const rec = new AudioModule.AudioRecorder(RecordingPresets.HIGH_QUALITY);
+    await rec.prepareToRecordAsync();
+    rec.record();
+    recorderRef.current = rec;
+    setRecordState("recording");
+    setSeconds(0);
+    timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
+  };
+
+  const stopRecording = async () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    const rec = recorderRef.current;
+    if (!rec) return;
+    await rec.stop();
+    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+    const uri = rec.uri;
+    console.log("[Voice] recorder.uri =", uri);
+    setLocalUri(uri ?? null);
+    setRecordState("recorded");
+    // recorderRef는 유지 — 파일이 삭제되지 않도록
+  };
+
+  const cancelRecording = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    recorderRef.current?.stop().catch(() => {});
+    recorderRef.current = null;
+    setLocalUri(null);
+    setRecordState("idle");
+    setSeconds(0);
+  };
+
+  const sendVoice = async () => {
+    if (!localUri || uploading || addComment.isPending) return;
+    setUploading(true);
+    try {
+      const ext = Platform.OS === "ios" ? "m4a" : "mp4";
+      const contentType = Platform.OS === "ios" ? "audio/m4a" : "audio/mp4";
+      const { uploadUrl, fileUrl } = await apiClient<{ uploadUrl: string; fileUrl: string }>(
+        `/api/upload/presigned?filename=voice.${ext}&contentType=${encodeURIComponent(contentType)}`
+      );
+      const file = new FSFile(localUri);
+      const buffer = await file.arrayBuffer();
+      const s3Resp = await fetch(uploadUrl, {
+        method: "PUT",
+        body: buffer,
+        headers: { "Content-Type": contentType },
+      });
+      if (!s3Resp.ok) throw new Error(`S3 upload failed: ${s3Resp.status}`);
+      recorderRef.current = null;
+      addComment.mutate({ type: "VOICE", audioUrl: fileUrl }, {
+        onSuccess: () => cancelRecording(),
+      });
+    } catch (e) {
+      Alert.alert("업로드 실패", String(e));
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSend = () => {
     const content = commentText.trim();
     if (!content || addComment.isPending) return;
-    addComment.mutate(content, { onSuccess: () => onCommentTextChange("") });
+    addComment.mutate({ content }, { onSuccess: () => onCommentTextChange("") });
   };
 
   const handleDelete = (comment: SpendingComment) => {
@@ -71,6 +189,8 @@ function InlineComments({
       { text: "삭제", style: "destructive", onPress: () => deleteComment.mutate(comment.id) },
     ]);
   };
+
+  const fmtSec = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   return (
     <View style={cs.section}>
@@ -99,31 +219,64 @@ function InlineComments({
                     </Pressable>
                   )}
                 </View>
-                <Text style={cs.commentBody}>{c.content}</Text>
+                {c.type === "VOICE" && c.audioUrl
+                  ? <VoicePlayer audioUrl={c.audioUrl} />
+                  : <Text style={cs.commentBody}>{c.content}</Text>}
               </View>
             </View>
           ))
         )}
       </View>
-      <View style={cs.inputRow}>
-        <TextInput
-          style={cs.input}
-          placeholder="댓글을 남겨보세요..."
-          placeholderTextColor="#adb5bd"
-          value={commentText}
-          onChangeText={onCommentTextChange}
-          returnKeyType="send"
-          onSubmitEditing={handleSend}
-          maxLength={200}
-        />
-        <Pressable
-          disabled={!commentText.trim() || addComment.isPending}
-          onPress={handleSend}
-          style={[cs.sendBtn, commentText.trim() && cs.sendBtnActive]}
-        >
-          <ArrowUp size={16} color={commentText.trim() ? "#fff" : "#adb5bd"} strokeWidth={3} />
-        </Pressable>
-      </View>
+
+      {recordState === "recorded" ? (
+        <View style={cs.inputRow}>
+          <Pressable onPress={cancelRecording} hitSlop={8} style={({ pressed }) => [pressed && { opacity: 0.5 }]}>
+            <X size={18} color="#adb5bd" />
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            {localUri && <VoicePlayer audioUrl={localUri} />}
+          </View>
+          <Pressable
+            onPress={sendVoice}
+            disabled={uploading || addComment.isPending}
+            style={[cs.sendBtn, cs.sendBtnActive, (uploading || addComment.isPending) && { opacity: 0.5 }]}
+          >
+            {uploading
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <ArrowUp size={16} color="#fff" strokeWidth={3} />}
+          </Pressable>
+        </View>
+      ) : recordState === "recording" ? (
+        <View style={cs.inputRow}>
+          <Text style={cs.recordTimer}>{fmtSec(seconds)}</Text>
+          <View style={{ flex: 1 }} />
+          <Pressable onPress={stopRecording} style={[cs.sendBtn, cs.recordingBtn]}>
+            <Mic size={16} color="#fff" strokeWidth={2.5} />
+          </Pressable>
+        </View>
+      ) : (
+        <View style={cs.inputRow}>
+          <TextInput
+            style={cs.input}
+            placeholder="댓글을 남겨보세요..."
+            placeholderTextColor="#adb5bd"
+            value={commentText}
+            onChangeText={onCommentTextChange}
+            returnKeyType="send"
+            onSubmitEditing={handleSend}
+            maxLength={200}
+          />
+          {commentText.trim() ? (
+            <Pressable onPress={handleSend} disabled={addComment.isPending} style={[cs.sendBtn, cs.sendBtnActive]}>
+              <ArrowUp size={16} color="#fff" strokeWidth={3} />
+            </Pressable>
+          ) : (
+            <Pressable onPress={startRecording} style={cs.sendBtn}>
+              <Mic size={16} color="#adb5bd" strokeWidth={2.5} />
+            </Pressable>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -393,4 +546,6 @@ const cs = StyleSheet.create({
   },
   sendBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#e5e8eb", alignItems: "center", justifyContent: "center" },
   sendBtnActive: { backgroundColor: "#3182f6" },
+  recordTimer: { fontSize: 14, fontWeight: "700", color: "#f04452", minWidth: 40 },
+  recordingBtn: { backgroundColor: "#f04452" },
 });

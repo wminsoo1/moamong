@@ -3,15 +3,21 @@ import { apiClient } from "@/src/lib/api";
 import { spendingKeys } from "../keys";
 import { RoomSpending, SpendingComment } from "../types";
 
+interface AddCommentInput {
+  type?: "TEXT" | "VOICE";
+  content?: string;
+  audioUrl?: string;
+}
+
 export function useAddComment(roomId: number, spendingId: number) {
   const queryClient = useQueryClient();
   const roomKey = ["spendings", "room", roomId];
 
   return useMutation({
-    mutationFn: (content: string) =>
+    mutationFn: (input: AddCommentInput) =>
       apiClient<SpendingComment>(`/api/rooms/${roomId}/spendings/${spendingId}/comments`, {
         method: "POST",
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ type: input.type ?? "TEXT", content: input.content, audioUrl: input.audioUrl }),
       }),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: roomKey });

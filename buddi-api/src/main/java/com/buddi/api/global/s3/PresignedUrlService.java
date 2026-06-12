@@ -33,7 +33,8 @@ public class PresignedUrlService {
     public record PresignedUploadResponse(String uploadUrl, String fileUrl) {}
 
     public PresignedUploadResponse generate(String filename, String contentType) {
-        String key = "images/" + UUID.randomUUID() + getExtension(filename);
+        String folder = contentType != null && contentType.startsWith("audio/") ? "audios/" : "images/";
+        String key = folder + UUID.randomUUID() + getExtension(filename);
 
         var presignRequest = PutObjectPresignRequest.builder()
                 .signatureDuration(Duration.ofMinutes(5))

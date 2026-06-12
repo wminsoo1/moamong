@@ -6,7 +6,10 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": ["moamong", "kakaof481347e0578b734ef7deee10b002433"],
+    "scheme": [
+      "moamong",
+      "kakaof481347e0578b734ef7deee10b002433"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.moamong.app",
@@ -21,9 +24,15 @@
         },
         "NSPhotoLibraryUsageDescription": "지출 내역에 사진을 첨부해 가계부를 기록하기 위해 사용합니다.",
         "NSCameraUsageDescription": "공유할 아이템 사진을 촬영하기 위해 사용합니다.",
-        "CFBundleLocalizations": ["ko", "en"],
+        "CFBundleLocalizations": [
+          "ko",
+          "en"
+        ],
         "KAKAO_APP_KEY": "f481347e0578b734ef7deee10b002433",
-        "LSApplicationQueriesSchemes": ["kakaokompassauth", "storekvault"],
+        "LSApplicationQueriesSchemes": [
+          "kakaokompassauth",
+          "storekvault"
+        ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -52,7 +61,8 @@
         {
           "iosDisplayInForeground": true
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true
