@@ -31,7 +31,7 @@ export function useToggleRoomNotification(roomId: number) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: notificationKey(roomId) });
-      queryClient.invalidateQueries({ queryKey: roomKeys.all() });
+      queryClient.invalidateQueries({ queryKey: roomKeys.all(), exact: true });
     },
   });
 }

@@ -8,7 +8,7 @@ export function useMarkRoomRead() {
     mutationFn: (roomId: number) =>
       apiClient(`/api/rooms/${roomId}/read`, { method: "POST" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: roomKeys.all() });
+      queryClient.invalidateQueries({ queryKey: roomKeys.all(), exact: true });
     },
   });
 }

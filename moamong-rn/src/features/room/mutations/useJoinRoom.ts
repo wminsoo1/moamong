@@ -9,7 +9,7 @@ export function useJoinRoom() {
     mutationFn: (inviteCode: string) =>
       apiClient(`/api/rooms/join`, { method: "POST", body: JSON.stringify({ inviteCode }) }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: roomKeys.all() });
+      queryClient.invalidateQueries({ queryKey: roomKeys.all(), exact: true });
     },
   });
 }

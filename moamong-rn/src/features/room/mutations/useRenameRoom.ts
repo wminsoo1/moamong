@@ -11,7 +11,7 @@ export function useRenameRoom() {
         body: JSON.stringify({ name }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: roomKeys.all() });
+      queryClient.invalidateQueries({ queryKey: roomKeys.all(), exact: true });
     },
   });
 }

@@ -9,7 +9,7 @@ export function useRegenerateInviteCode() {
     mutationFn: (roomId: number) =>
       apiClient<{ inviteCode: string }>(`/api/rooms/${roomId}/invite-code/regenerate`, { method: "POST" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: roomKeys.all() });
+      queryClient.invalidateQueries({ queryKey: roomKeys.all(), exact: true });
     },
     onError: (e: Error) => toast.show(e.message),
   });

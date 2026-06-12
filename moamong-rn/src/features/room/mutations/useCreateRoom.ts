@@ -12,7 +12,7 @@ export function useCreateRoom() {
         body: JSON.stringify({ name }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: roomKeys.all() });
+      queryClient.invalidateQueries({ queryKey: roomKeys.all(), exact: true });
     },
     onError: (e: Error) => toast.show(e.message),
   });
