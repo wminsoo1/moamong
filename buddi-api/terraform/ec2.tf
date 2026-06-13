@@ -13,10 +13,8 @@ aws ec2 associate-address \
   --allocation-id ${var.eip_allocation_id} \
   --allow-reassociation
 
-# 2. 패키지 설치 (Alloy 먼저 - Spring Boot 실행 전 메모리 여유 있을 때)
-printf '[grafana]\nname=grafana\nbaseurl=https://rpm.grafana.com\nrepo_gpgcheck=1\nenabled=1\ngpgcheck=1\ngpgkey=https://rpm.grafana.com/gpg.key\nsslverify=1\n' \
-  | tee /etc/yum.repos.d/grafana.repo
-yum install -y java-17-amazon-corretto nginx python3-certbot-nginx alloy
+# 2. 패키지 설치
+yum install -y java-17-amazon-corretto nginx python3-certbot-nginx
 
 # 3. S3에서 jar 및 환경변수 파일 다운로드
 mkdir -p /app
@@ -82,53 +80,6 @@ yum install -y amazon-cloudwatch-agent
   -m ec2 \
   -s \
   -c ssm:/moamong/cloudwatch-agent-config
-
-# 10. Grafana Alloy 설정
-mkdir -p /etc/alloy
-
-GRAFANA_TOKEN=$(aws ssm get-parameter \
-  --name /moamong/grafana-alloy-token \
-  --with-decryption \
-  --query Parameter.Value \
-  --output text \
-  --region ${var.aws_region})
-
-cat > /etc/alloy/config.alloy << ALLOY_CONF
-logging {
-  level = "warn"
-  format = "logfmt"
-}
-
-prometheus.exporter.unix "node" {}
-
-prometheus.scrape "node" {
-  targets         = prometheus.exporter.unix.node.targets
-  forward_to      = [prometheus.remote_write.grafana.receiver]
-  scrape_interval = "60s"
-}
-
-prometheus.scrape "spring" {
-  targets = [{
-    __address__ = "localhost:8080",
-  }]
-  metrics_path    = "/actuator/prometheus"
-  forward_to      = [prometheus.remote_write.grafana.receiver]
-  scrape_interval = "60s"
-}
-
-prometheus.remote_write "grafana" {
-  endpoint {
-    url = "https://prometheus-prod-49-prod-ap-northeast-0.grafana.net/api/prom/push"
-    basic_auth {
-      username = "3303856"
-      password = "$GRAFANA_TOKEN"
-    }
-  }
-}
-ALLOY_CONF
-
-systemctl enable alloy
-systemctl start alloy
 
 echo "배포 완료: $(date)"
 EOF

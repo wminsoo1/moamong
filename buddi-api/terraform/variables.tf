@@ -45,9 +45,3 @@ variable "image_bucket_name" {
   description = "유저 업로드 이미지 S3 버킷 이름"
   default     = "moamong-images"
 }
-
-variable "grafana_alloy_token" {
-  description = "Grafana Alloy remote write 토큰"
-  type        = string
-  sensitive   = true
-}
