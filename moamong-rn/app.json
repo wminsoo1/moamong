@@ -44,11 +44,23 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
     "web": {
       "favicon": "./assets/icon.png",
       "bundler": "metro"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/88decfe4-759f-46c6-a17b-51299ae774fd"
     },
     "plugins": [
       "expo-router",
@@ -62,10 +74,18 @@
           "iosDisplayInForeground": true
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "88decfe4-759f-46c6-a17b-51299ae774fd"
+      }
+    },
+    "owner": "wminsoo1"
   }
 }

@@ -25,8 +25,5 @@ export function useToggleSpendingLike(roomId: number, year: number, month: numbe
     onError: (_, __, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(key, ctx.prev);
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: key });
-    },
   });
 }

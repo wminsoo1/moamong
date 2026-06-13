@@ -2,15 +2,36 @@ locals {
   alert_email = "wminsoo1@naver.com"
 
   cw_agent_config = jsonencode({
+    agent = {
+      metrics_collection_interval = 60
+      run_as_user                 = "cwagent"
+    }
+    metrics = {
+      namespace = "CWAgent"
+      append_dimensions = {
+        AutoScalingGroupName = "$${aws:AutoScalingGroupName}"
+      }
+      metrics_collected = {
+        mem = {
+          measurement                 = ["mem_used_percent"]
+          metrics_collection_interval = 60
+        }
+        disk = {
+          measurement                 = ["disk_used_percent"]
+          resources                   = ["/"]
+          metrics_collection_interval = 60
+        }
+      }
+    }
     logs = {
       logs_collected = {
         files = {
           collect_list = [
             {
-              file_path        = "/app/app.log"
-              log_group_name   = "/moamong/app"
-              log_stream_name  = "{instance_id}"
-              timezone         = "UTC"
+              file_path       = "/app/app.log"
+              log_group_name  = "/moamong/app"
+              log_stream_name = "{instance_id}"
+              timezone        = "UTC"
             }
           ]
         }
@@ -136,4 +157,109 @@ resource "aws_cloudwatch_metric_alarm" "error_alarm" {
   alarm_description   = "Spring Boot ERROR 로그 5분 내 1건 이상 감지"
   alarm_actions       = [aws_sns_topic.alerts.arn]
   treat_missing_data  = "notBreaching"
+}
+
+resource "aws_cloudwatch_metric_alarm" "memory_alarm" {
+  alarm_name          = "moamong-memory-high"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 3
+  metric_name         = "mem_used_percent"
+  namespace           = "CWAgent"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 85
+  dimensions = {
+    AutoScalingGroupName = "moamong-asg"
+  }
+  alarm_description  = "메모리 사용률 85% 이상 3분 지속"
+  alarm_actions      = [aws_sns_topic.alerts.arn]
+  treat_missing_data = "notBreaching"
+}
+
+resource "aws_cloudwatch_dashboard" "moamong" {
+  dashboard_name = "moamong"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+        properties = {
+          title  = "CPU 사용률 (%)"
+          view   = "timeSeries"
+          region = var.aws_region
+          metrics = [
+            ["AWS/EC2", "CPUUtilization", "AutoScalingGroupName", "moamong-asg", { stat = "Average", period = 60 }]
+          ]
+          yAxis = { left = { min = 0, max = 100 } }
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+        properties = {
+          title  = "메모리 사용률 (%)"
+          view   = "timeSeries"
+          region = var.aws_region
+          metrics = [
+            ["CWAgent", "mem_used_percent", "AutoScalingGroupName", "moamong-asg", { stat = "Average", period = 60 }]
+          ]
+          yAxis = { left = { min = 0, max = 100 } }
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+        properties = {
+          title  = "디스크 사용률 (%)"
+          view   = "timeSeries"
+          region = var.aws_region
+          metrics = [
+            [{ expression = "SEARCH('{CWAgent,AutoScalingGroupName,device,fstype,path} AutoScalingGroupName=\"moamong-asg\" MetricName=\"disk_used_percent\"', 'Average', 60)", id = "d1", label = "디스크 (/)" }]
+          ]
+          yAxis = { left = { min = 0, max = 100 } }
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+        properties = {
+          title  = "네트워크 트래픽 (bytes)"
+          view   = "timeSeries"
+          region = var.aws_region
+          metrics = [
+            ["AWS/EC2", "NetworkIn", "AutoScalingGroupName", "moamong-asg", { stat = "Sum", period = 60, label = "수신" }],
+            ["AWS/EC2", "NetworkOut", "AutoScalingGroupName", "moamong-asg", { stat = "Sum", period = 60, label = "송신" }]
+          ]
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 12
+        width  = 24
+        height = 6
+        properties = {
+          title  = "애플리케이션 에러"
+          view   = "timeSeries"
+          region = var.aws_region
+          metrics = [
+            ["Moamong", "ErrorCount", { stat = "Sum", period = 300, color = "#d62728", label = "에러 수" }]
+          ]
+        }
+      }
+    ]
+  })
 }
