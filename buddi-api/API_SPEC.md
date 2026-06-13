@@ -760,12 +760,18 @@ GET /api/rooms/{roomId}/spendings?year={year}&month={month}
     "imageUrl": null,
     "createdAt": "2026-06-02T12:30:00Z",
     "userId": 1,
-    "username": "testfriend"
+    "username": "testfriend",
+    "commentCount": 2,
+    "likeCount": 3,
+    "liked": false
   }
 ]
 ```
 - 날짜 내림차순 → `createdAt` 내림차순 정렬
 - `userId`, `username`: 해당 지출을 작성한 멤버 정보
+- `commentCount`: 해당 방에서 달린 댓글 수
+- `likeCount`: 해당 방에서 누른 좋아요 수 (60초 딜레이 허용)
+- `liked`: 요청한 유저의 좋아요 여부
 
 **에러**
 
@@ -773,6 +779,108 @@ GET /api/rooms/{roomId}/spendings?year={year}&month={month}
 |---|---|
 | `403` | 방 멤버가 아님 |
 | `404` | 방 없음 |
+
+---
+
+### 방 지출 댓글 목록
+```
+GET /api/rooms/{roomId}/spendings/{spendingId}/comments
+```
+
+해당 방에서 달린 댓글만 반환합니다.
+
+**Response**
+```json
+[
+  {
+    "id": 1,
+    "userId": 2,
+    "username": "민준",
+    "type": "TEXT",
+    "content": "나도 샀어!",
+    "audioUrl": null,
+    "createdAt": "2026-06-02T12:30:00Z"
+  },
+  {
+    "id": 2,
+    "userId": 3,
+    "username": "지수",
+    "type": "VOICE",
+    "content": null,
+    "audioUrl": "https://cdn.moamong.com/voices/abc.m4a",
+    "createdAt": "2026-06-02T12:31:00Z"
+  }
+]
+```
+- `type`: `TEXT` 또는 `VOICE`
+- `content`: 텍스트 댓글 내용 (`VOICE`이면 `null`)
+- `audioUrl`: 음성 댓글 URL (`TEXT`이면 `null`)
+
+---
+
+### 방 지출 댓글 작성
+```
+POST /api/rooms/{roomId}/spendings/{spendingId}/comments
+```
+
+**Request (텍스트)**
+```json
+{
+  "type": "TEXT",
+  "content": "나도 샀어!"
+}
+```
+
+**Request (음성)**
+```json
+{
+  "type": "VOICE",
+  "audioUrl": "https://cdn.moamong.com/voices/abc.m4a"
+}
+```
+
+**Response:** 작성된 댓글 객체 (댓글 목록 단일 항목과 동일)
+
+**에러**
+
+| 상태코드 | 조건 |
+|---|---|
+| `400` | content 또는 audioUrl 누락 |
+| `403` | 방 멤버가 아님 |
+
+---
+
+### 방 지출 댓글 삭제
+```
+DELETE /api/rooms/{roomId}/spendings/{spendingId}/comments/{commentId}
+```
+
+**Response:** `204 No Content`
+
+**에러**
+
+| 상태코드 | 조건 |
+|---|---|
+| `403` | 본인 댓글이 아님 또는 방 멤버가 아님 |
+| `404` | 댓글 없음 |
+
+---
+
+### 방 지출 좋아요 토글
+```
+POST /api/rooms/{roomId}/spendings/{spendingId}/likes
+```
+
+좋아요가 없으면 추가, 있으면 취소합니다.
+
+**Response:** `200 OK`
+
+**에러**
+
+| 상태코드 | 조건 |
+|---|---|
+| `403` | 방 멤버가 아님 |
+| `404` | 지출 없음 |
 
 ---
 

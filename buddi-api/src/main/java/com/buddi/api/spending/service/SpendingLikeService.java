@@ -30,6 +30,5 @@ public class SpendingLikeService {
         } else {
             spendingCacheService.addLike(userId, roomId, spendingId);
         }
-        spendingCacheService.evictMonthly(roomId, spending.getDate().getYear(), spending.getDate().getMonthValue());
     }
 }
