@@ -113,10 +113,15 @@ jobs:
             --filters "Name=tag:Name,Values=moamong-api" "Name=instance-state-name,Values=running" \
             --query "Reservations[0].Instances[0].InstanceId" \
             --output text)
-          aws ssm send-command \
+          COMMAND_ID=$(aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["aws s3 cp s3://moamong-deploy/app.jar /app/app.jar && sed -i \"s|ExecStart=/usr/bin/java.*-jar|ExecStart=/usr/bin/java -Xmx192m -jar|\" /etc/systemd/system/buddi-api.service && systemctl daemon-reload && systemctl restart buddi-api"]'
+            --parameters 'commands=["aws s3 cp s3://moamong-deploy/app.jar /app/app.jar && sed -i \"s|ExecStart=/usr/bin/java.*-jar|ExecStart=/usr/bin/java -Xmx192m -jar|\" /etc/systemd/system/buddi-api.service && systemctl daemon-reload && systemctl restart buddi-api"]' \
+            --query "Command.CommandId" \
+            --output text)
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID"
 
       - name: Setup Grafana Alloy on EC2
         run: |
@@ -124,7 +129,12 @@ jobs:
             --filters "Name=tag:Name,Values=moamong-api" "Name=instance-state-name,Values=running" \
             --query "Reservations[0].Instances[0].InstanceId" \
             --output text)
-          aws ssm send-command \
+          COMMAND_ID=$(aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["aws s3 cp s3://moamong-deploy/setup-alloy.sh /tmp/setup-alloy.sh && chmod +x /tmp/setup-alloy.sh && /tmp/setup-alloy.sh"]'
+            --parameters 'commands=["aws s3 cp s3://moamong-deploy/setup-alloy.sh /tmp/setup-alloy.sh && chmod +x /tmp/setup-alloy.sh && sudo /tmp/setup-alloy.sh"]' \
+            --query "Command.CommandId" \
+            --output text)
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID"

@@ -13,8 +13,10 @@ aws ec2 associate-address \
   --allocation-id ${var.eip_allocation_id} \
   --allow-reassociation
 
-# 2. 패키지 설치
-yum install -y java-17-amazon-corretto nginx python3-certbot-nginx
+# 2. 패키지 설치 (Alloy 먼저 - Spring Boot 실행 전 메모리 여유 있을 때)
+printf '[grafana]\nname=grafana\nbaseurl=https://rpm.grafana.com\nrepo_gpgcheck=1\nenabled=1\ngpgcheck=1\ngpgkey=https://rpm.grafana.com/gpg.key\nsslverify=1\n' \
+  | tee /etc/yum.repos.d/grafana.repo
+yum install -y java-17-amazon-corretto nginx python3-certbot-nginx alloy
 
 # 3. S3에서 jar 및 환경변수 파일 다운로드
 mkdir -p /app
@@ -81,11 +83,7 @@ yum install -y amazon-cloudwatch-agent
   -s \
   -c ssm:/moamong/cloudwatch-agent-config
 
-# 10. Grafana Alloy 설치 및 설정
-printf '[grafana]\nname=grafana\nbaseurl=https://rpm.grafana.com\nrepo_gpgcheck=1\nenabled=1\ngpgcheck=1\ngpgkey=https://rpm.grafana.com/gpg.key\nsslverify=1\n' \
-  | tee /etc/yum.repos.d/grafana.repo
-yum install -y alloy
-
+# 10. Grafana Alloy 설정
 mkdir -p /etc/alloy
 
 GRAFANA_TOKEN=$(aws ssm get-parameter \
