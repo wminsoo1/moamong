@@ -46,4 +46,14 @@ public class SpendingCommentController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/api/spendings/{spendingId}/comments/{commentId}")
+    public ResponseEntity<Void> deleteCommentLegacy(
+            @PathVariable Long spendingId,
+            @PathVariable Long commentId,
+            Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        spendingCommentService.deleteCommentLegacy(spendingId, commentId, principal.getUserId());
+        return ResponseEntity.noContent().build();
+    }
+
 }

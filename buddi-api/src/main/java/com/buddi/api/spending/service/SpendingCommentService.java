@@ -87,6 +87,22 @@ public class SpendingCommentService {
     }
 
     @Transactional
+    public void deleteCommentLegacy(Long spendingId, Long commentId, Long userId) {
+        Spending spending = spendingRepository.findByIdWithComments(spendingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "지출이 없습니다"));
+        SpendingComment comment = spending.getComments().stream()
+                .filter(c -> c.getId().equals(commentId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "댓글이 없습니다"));
+        comment.validateOwner(userId);
+        if ("VOICE".equals(comment.getType())) {
+            presignedUrlService.deleteByUrl(comment.getAudioUrl());
+        }
+        spending.getComments().remove(comment);
+        spendingRepository.save(spending);
+    }
+
+    @Transactional
     public void deleteComment(Long roomId, Long spendingId, Long commentId, Long userId) {
         roomQueryService.validateMember(roomId, userId);
         Spending spending = spendingRepository.findByIdWithComments(spendingId)
