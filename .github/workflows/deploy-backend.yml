@@ -46,6 +46,67 @@ jobs:
           aws s3 cp build/libs/buddi-api-0.0.1-SNAPSHOT.jar \
             s3://moamong-deploy/app.jar
 
+      - name: Upload Alloy setup script to S3
+        run: |
+          cat > /tmp/setup-alloy.sh << 'SCRIPT'
+          #!/bin/bash
+          set -e
+
+          if ! command -v alloy &>/dev/null; then
+            printf '[grafana]\nname=grafana\nbaseurl=https://rpm.grafana.com\nrepo_gpgcheck=1\nenabled=1\ngpgcheck=1\ngpgkey=https://rpm.grafana.com/gpg.key\nsslverify=1\n' \
+              | tee /etc/yum.repos.d/grafana.repo
+            yum install -y alloy
+          fi
+
+          mkdir -p /etc/alloy
+
+          TOKEN=$(aws ssm get-parameter \
+            --name /moamong/grafana-alloy-token \
+            --with-decryption \
+            --query Parameter.Value \
+            --output text \
+            --region ap-northeast-2)
+
+          cat > /etc/alloy/config.alloy << CONF
+          logging {
+            level = "warn"
+            format = "logfmt"
+          }
+
+          prometheus.exporter.unix "node" {}
+
+          prometheus.scrape "node" {
+            targets         = prometheus.exporter.unix.node.targets
+            forward_to      = [prometheus.remote_write.grafana.receiver]
+            scrape_interval = "60s"
+          }
+
+          prometheus.scrape "spring" {
+            targets = [{
+              __address__ = "localhost:8080",
+            }]
+            metrics_path    = "/actuator/prometheus"
+            forward_to      = [prometheus.remote_write.grafana.receiver]
+            scrape_interval = "60s"
+          }
+
+          prometheus.remote_write "grafana" {
+            endpoint {
+              url = "https://prometheus-prod-49-prod-ap-northeast-0.grafana.net/api/prom/push"
+              basic_auth {
+                username = "3303856"
+                password = "$TOKEN"
+              }
+            }
+          }
+          CONF
+
+          systemctl enable alloy
+          systemctl restart alloy
+          SCRIPT
+
+          aws s3 cp /tmp/setup-alloy.sh s3://moamong-deploy/setup-alloy.sh
+
       - name: Restart service on EC2
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
@@ -56,3 +117,14 @@ jobs:
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=["aws s3 cp s3://moamong-deploy/app.jar /app/app.jar && sed -i \"s|ExecStart=/usr/bin/java.*-jar|ExecStart=/usr/bin/java -Xmx192m -jar|\" /etc/systemd/system/buddi-api.service && systemctl daemon-reload && systemctl restart buddi-api"]'
+
+      - name: Setup Grafana Alloy on EC2
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=moamong-api" "Name=instance-state-name,Values=running" \
+            --query "Reservations[0].Instances[0].InstanceId" \
+            --output text)
+          aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["aws s3 cp s3://moamong-deploy/setup-alloy.sh /tmp/setup-alloy.sh && chmod +x /tmp/setup-alloy.sh && /tmp/setup-alloy.sh"]'
