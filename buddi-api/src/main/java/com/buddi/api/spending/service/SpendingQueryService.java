@@ -48,7 +48,8 @@ public class SpendingQueryService {
 
         if (base.isEmpty()) return base;
         List<Long> spendingIds = base.stream().map(RoomSpendingListResponse::getId).toList();
-        Set<Long> likedIds = new HashSet<>(spendingRepository.findLikedSpendingIdsByUserIdAndRoomId(viewerId, spendingIds, roomId));
+        Set<Long> likedIds = spendingCacheService.getUserLikes(viewerId, roomId,
+                () -> spendingRepository.findLikedSpendingIdsByUserIdAndRoomId(viewerId, spendingIds, roomId));
 
         return base.stream()
                 .map(item -> likedIds.contains(item.getId()) ? item.withLiked(true) : item)

@@ -5,10 +5,12 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 @Component
 public class SpendingCacheService {
@@ -18,7 +20,7 @@ public class SpendingCacheService {
             .maximumSize(500)
             .build();
 
-    private final Cache<Long, Set<Long>> userLikesCache = Caffeine.newBuilder()
+    private final Cache<String, Set<Long>> userLikesCache = Caffeine.newBuilder()
             .expireAfterWrite(60, TimeUnit.SECONDS)
             .maximumSize(1000)
             .build();
@@ -27,26 +29,30 @@ public class SpendingCacheService {
         return roomId + ":" + year + ":" + month;
     }
 
+    private String likesKey(Long userId, Long roomId) {
+        return userId + ":" + roomId;
+    }
+
     public List<RoomSpendingListResponse> getMonthly(Long roomId, int year, int month,
             Function<String, List<RoomSpendingListResponse>> loader) {
         return monthlyCache.get(monthKey(roomId, year, month), loader);
     }
 
-    public Set<Long> getUserLikes(Long userId, Function<Long, Set<Long>> loader) {
-        return userLikesCache.get(userId, loader);
+    public Set<Long> getUserLikes(Long userId, Long roomId, Supplier<List<Long>> loader) {
+        return userLikesCache.get(likesKey(userId, roomId), k -> new HashSet<>(loader.get()));
     }
 
     public void evictMonthly(Long roomId, int year, int month) {
         monthlyCache.invalidate(monthKey(roomId, year, month));
     }
 
-    public void addLike(Long userId, Long spendingId) {
-        Set<Long> likes = userLikesCache.getIfPresent(userId);
+    public void addLike(Long userId, Long roomId, Long spendingId) {
+        Set<Long> likes = userLikesCache.getIfPresent(likesKey(userId, roomId));
         if (likes != null) likes.add(spendingId);
     }
 
-    public void removeLike(Long userId, Long spendingId) {
-        Set<Long> likes = userLikesCache.getIfPresent(userId);
+    public void removeLike(Long userId, Long roomId, Long spendingId) {
+        Set<Long> likes = userLikesCache.getIfPresent(likesKey(userId, roomId));
         if (likes != null) likes.remove(spendingId);
     }
 }

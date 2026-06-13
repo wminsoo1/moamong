@@ -26,9 +26,9 @@ public class SpendingLikeService {
         spending.toggleLike(roomId, userId);
         spendingRepository.save(spending);
         if (wasLiked) {
-            spendingCacheService.removeLike(userId, spendingId);
+            spendingCacheService.removeLike(userId, roomId, spendingId);
         } else {
-            spendingCacheService.addLike(userId, spendingId);
+            spendingCacheService.addLike(userId, roomId, spendingId);
         }
         spendingCacheService.evictMonthly(roomId, spending.getDate().getYear(), spending.getDate().getMonthValue());
     }
