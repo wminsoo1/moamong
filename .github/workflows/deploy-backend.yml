@@ -55,4 +55,4 @@ jobs:
           aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["aws s3 cp s3://moamong-deploy/app.jar /app/app.jar && systemctl restart buddi-api"]'
+            --parameters 'commands=["aws s3 cp s3://moamong-deploy/app.jar /app/app.jar && sed -i \"s|ExecStart=/usr/bin/java.*-jar|ExecStart=/usr/bin/java -Xmx192m -jar|\" /etc/systemd/system/buddi-api.service && systemctl daemon-reload && systemctl restart buddi-api"]'
