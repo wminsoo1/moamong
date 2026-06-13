@@ -47,9 +47,8 @@ public class SpendingQueryService {
                 k -> loadBaseMonthly(roomId, year, month));
 
         if (base.isEmpty()) return base;
-
-        Set<Long> likedIds = spendingCacheService.getUserLikes(viewerId,
-                uid -> new HashSet<>(spendingRepository.findAllLikedSpendingIdsByUserId(uid)));
+        List<Long> spendingIds = base.stream().map(RoomSpendingListResponse::getId).toList();
+        Set<Long> likedIds = new HashSet<>(spendingRepository.findLikedSpendingIdsByUserIdAndRoomId(viewerId, spendingIds, roomId));
 
         return base.stream()
                 .map(item -> likedIds.contains(item.getId()) ? item.withLiked(true) : item)
@@ -76,10 +75,10 @@ public class SpendingQueryService {
 
         List<Long> ids = all.stream().map(sm -> sm.spending().getId()).toList();
         Map<Long, Integer> commentCounts = ids.isEmpty() ? Map.of() :
-                spendingRepository.countCommentsBySpendingIdIn(ids).stream()
+                spendingRepository.countCommentsBySpendingIdInAndRoomId(ids, roomId).stream()
                         .collect(Collectors.toMap(row -> (Long) row[0], row -> ((Long) row[1]).intValue()));
         Map<Long, Integer> likeCounts = ids.isEmpty() ? Map.of() :
-                spendingRepository.countLikesBySpendingIdIn(ids).stream()
+                spendingRepository.countLikesBySpendingIdInAndRoomId(ids, roomId).stream()
                         .collect(Collectors.toMap(row -> (Long) row[0], row -> ((Long) row[1]).intValue()));
 
         return all.stream()

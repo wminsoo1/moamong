@@ -34,17 +34,14 @@ public interface SpendingRepository extends JpaRepository<Spending, Long> {
     @Query("SELECT DISTINCT s FROM Spending s LEFT JOIN FETCH s.likes WHERE s.id = :id")
     Optional<Spending> findByIdWithLikes(@Param("id") Long id);
 
-    @Query("SELECT l.spending.id, COUNT(l) FROM SpendingLike l WHERE l.spending.id IN :ids GROUP BY l.spending.id")
-    List<Object[]> countLikesBySpendingIdIn(@Param("ids") List<Long> ids);
+    @Query("SELECT l.spending.id, COUNT(l) FROM SpendingLike l WHERE l.spending.id IN :ids AND l.roomId = :roomId GROUP BY l.spending.id")
+    List<Object[]> countLikesBySpendingIdInAndRoomId(@Param("ids") List<Long> ids, @Param("roomId") Long roomId);
 
-    @Query("SELECT l.spending.id FROM SpendingLike l WHERE l.userId = :userId AND l.spending.id IN :ids")
-    List<Long> findLikedSpendingIdsByUserIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
+    @Query("SELECT l.spending.id FROM SpendingLike l WHERE l.userId = :userId AND l.spending.id IN :ids AND l.roomId = :roomId")
+    List<Long> findLikedSpendingIdsByUserIdAndRoomId(@Param("userId") Long userId, @Param("ids") List<Long> ids, @Param("roomId") Long roomId);
 
-    @Query("SELECT l.spending.id FROM SpendingLike l WHERE l.userId = :userId")
-    List<Long> findAllLikedSpendingIdsByUserId(@Param("userId") Long userId);
-
-    @Query("SELECT c.spending.id, COUNT(c) FROM SpendingComment c WHERE c.spending.id IN :ids GROUP BY c.spending.id")
-    List<Object[]> countCommentsBySpendingIdIn(@Param("ids") List<Long> ids);
+    @Query("SELECT c.spending.id, COUNT(c) FROM SpendingComment c WHERE c.spending.id IN :ids AND c.roomId = :roomId GROUP BY c.spending.id")
+    List<Object[]> countCommentsBySpendingIdInAndRoomId(@Param("ids") List<Long> ids, @Param("roomId") Long roomId);
 
     @Query("SELECT new com.buddi.api.spending.dto.WeeklyAmountDto(FLOOR((DAY(s.date) - 1) / 7) + 1, SUM(s.amount)) " +
            "FROM Spending s " +

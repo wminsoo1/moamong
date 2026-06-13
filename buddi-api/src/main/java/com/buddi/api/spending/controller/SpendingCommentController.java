@@ -20,8 +20,9 @@ public class SpendingCommentController {
 
     @GetMapping("/api/rooms/{roomId}/spendings/{spendingId}/comments")
     public ResponseEntity<List<SpendingCommentResponse>> getComments(
+            @PathVariable Long roomId,
             @PathVariable Long spendingId) {
-        return ResponseEntity.ok(spendingCommentService.getComments(spendingId));
+        return ResponseEntity.ok(spendingCommentService.getComments(roomId, spendingId));
     }
 
     @PostMapping("/api/rooms/{roomId}/spendings/{spendingId}/comments")
@@ -34,13 +35,14 @@ public class SpendingCommentController {
         return ResponseEntity.ok(spendingCommentService.addComment(roomId, spendingId, principal.getUserId(), request));
     }
 
-    @DeleteMapping("/api/spendings/{spendingId}/comments/{commentId}")
+    @DeleteMapping("/api/rooms/{roomId}/spendings/{spendingId}/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(
+            @PathVariable Long roomId,
             @PathVariable Long spendingId,
             @PathVariable Long commentId,
             Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        spendingCommentService.deleteComment(spendingId, commentId, principal.getUserId());
+        spendingCommentService.deleteComment(roomId, spendingId, commentId, principal.getUserId());
         return ResponseEntity.noContent().build();
     }
 

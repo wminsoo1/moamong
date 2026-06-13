@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "spending_likes",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"spending_id", "user_id"}))
+        uniqueConstraints = @UniqueConstraint(columnNames = {"spending_id", "room_id", "user_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SpendingLike {
@@ -23,6 +23,9 @@ public class SpendingLike {
     private Spending spending;
 
     @Column(nullable = false)
+    private Long roomId;
+
+    @Column(nullable = false)
     private Long userId;
 
     @Column(nullable = false, updatable = false)
@@ -33,9 +36,10 @@ public class SpendingLike {
         createdAt = LocalDateTime.now();
     }
 
-    public static SpendingLike of(Spending spending, Long userId) {
+    public static SpendingLike of(Spending spending, Long roomId, Long userId) {
         SpendingLike like = new SpendingLike();
         like.spending = spending;
+        like.roomId = roomId;
         like.userId = userId;
         return like;
     }

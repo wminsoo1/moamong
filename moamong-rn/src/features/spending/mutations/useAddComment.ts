@@ -31,7 +31,7 @@ export function useAddComment(roomId: number, spendingId: number) {
       ctx?.prev.forEach(([key, data]) => queryClient.setQueryData(key, data));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: spendingKeys.comments(spendingId) });
+      queryClient.invalidateQueries({ queryKey: spendingKeys.comments(roomId, spendingId) });
     },
   });
 }

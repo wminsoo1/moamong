@@ -22,8 +22,8 @@ public class SpendingLikeService {
         roomQueryService.validateMember(roomId, userId);
         Spending spending = spendingRepository.findByIdWithLikes(spendingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "지출이 없습니다"));
-        boolean wasLiked = spending.isLikedBy(userId);
-        spending.toggleLike(userId);
+        boolean wasLiked = spending.isLikedBy(roomId, userId);
+        spending.toggleLike(roomId, userId);
         spendingRepository.save(spending);
         if (wasLiked) {
             spendingCacheService.removeLike(userId, spendingId);

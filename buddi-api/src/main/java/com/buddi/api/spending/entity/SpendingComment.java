@@ -28,6 +28,9 @@ public class SpendingComment {
     private Long userId;
 
     @Column(nullable = false)
+    private Long roomId;
+
+    @Column(nullable = false)
     private String type; // TEXT | VOICE
 
     @Column(length = 200)
@@ -43,9 +46,10 @@ public class SpendingComment {
         createdAt = LocalDateTime.now();
     }
 
-    public static SpendingComment of(Spending spending, Long userId, String content) {
+    public static SpendingComment of(Spending spending, Long roomId, Long userId, String content) {
         SpendingComment comment = new SpendingComment();
         comment.spending = spending;
+        comment.roomId = roomId;
         comment.userId = userId;
         comment.type = "TEXT";
         comment.content = content;
@@ -53,9 +57,10 @@ public class SpendingComment {
         return comment;
     }
 
-    public static SpendingComment ofVoice(Spending spending, Long userId, String audioUrl) {
+    public static SpendingComment ofVoice(Spending spending, Long roomId, Long userId, String audioUrl) {
         SpendingComment comment = new SpendingComment();
         comment.spending = spending;
+        comment.roomId = roomId;
         comment.userId = userId;
         comment.type = "VOICE";
         comment.audioUrl = audioUrl;

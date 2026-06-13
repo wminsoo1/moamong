@@ -217,6 +217,11 @@ public class DataInitializer implements CommandLineRunner {
         User jisu       = userRepository.findByProviderAndProviderId("dummy", "test003").orElse(null);
         if (testfriend == null || minjun == null || jisu == null) return;
 
+        Long room1Id = roomRepository.findByUserId(testfriend.getId()).stream()
+                .filter(r -> "우리 셋 방".equals(r.getName()))
+                .map(r -> r.getId())
+                .findFirst().orElse(1L);
+
         LocalDate may1  = LocalDate.of(2026, 5, 1);
         LocalDate may31 = LocalDate.of(2026, 5, 31);
 
@@ -236,51 +241,51 @@ public class DataInitializer implements CommandLineRunner {
         // test001 후드집업 — 댓글 3개 + 좋아요 2개
         tfSpendings.stream().filter(s -> "후드집업".equals(s.getMemo())).findFirst().ifPresent(s -> {
             Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
-            sp.addComment(mjId, "이거 무신사 세일 때 샀어? 나도 살까 봐");
-            sp.addComment(jiId, "색깔 뭐야? 나도 비슷한 거 찾고 있었는데");
-            sp.addComment(tfId, "그레이! 39% 할인 때 득템 ㅋㅋ");
-            sp.toggleLike(mjId);
-            sp.toggleLike(jiId);
+            sp.addComment(room1Id, mjId, "이거 무신사 세일 때 샀어? 나도 살까 봐");
+            sp.addComment(room1Id, jiId, "색깔 뭐야? 나도 비슷한 거 찾고 있었는데");
+            sp.addComment(room1Id, tfId, "그레이! 39% 할인 때 득템 ㅋㅋ");
+            sp.toggleLike(room1Id, mjId);
+            sp.toggleLike(room1Id, jiId);
             spendingRepository.save(sp);
         });
 
         // test001 나이키 운동화 — 댓글 2개 + 좋아요 2개
         tfSpendings.stream().filter(s -> "나이키 운동화".equals(s.getMemo())).findFirst().ifPresent(s -> {
             Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
-            sp.addComment(mjId, "이거 얼마야? 나도 사고 싶었는데");
-            sp.addComment(jiId, "러닝화야? 완전 좋아 보인다");
-            sp.toggleLike(mjId);
-            sp.toggleLike(jiId);
+            sp.addComment(room1Id, mjId, "이거 얼마야? 나도 사고 싶었는데");
+            sp.addComment(room1Id, jiId, "러닝화야? 완전 좋아 보인다");
+            sp.toggleLike(room1Id, mjId);
+            sp.toggleLike(room1Id, jiId);
             spendingRepository.save(sp);
         });
 
         // test002 아크테릭스 자켓 — 댓글 2개 + 좋아요 2개
         mjSpendings.stream().filter(s -> "아크테릭스 자켓".equals(s.getMemo())).findFirst().ifPresent(s -> {
             Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
-            sp.addComment(tfId, "이거 진짜 갖고 싶었는데ㅠㅠ 어디서 샀어?");
-            sp.addComment(jiId, "부럽다 ㅋㅋ 나중에 실물 보여줘");
-            sp.toggleLike(tfId);
-            sp.toggleLike(jiId);
+            sp.addComment(room1Id, tfId, "이거 진짜 갖고 싶었는데ㅠㅠ 어디서 샀어?");
+            sp.addComment(room1Id, jiId, "부럽다 ㅋㅋ 나중에 실물 보여줘");
+            sp.toggleLike(room1Id, tfId);
+            sp.toggleLike(room1Id, jiId);
             spendingRepository.save(sp);
         });
 
         // test002 우영미 셔츠 — 댓글 2개 + 좋아요 1개
         mjSpendings.stream().filter(s -> "우영미 셔츠".equals(s.getMemo())).findFirst().ifPresent(s -> {
             Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
-            sp.addComment(tfId, "이거 얼마야...? 고퀄이다");
-            sp.addComment(jiId, "진짜 명품 감성 ㅋㅋ");
-            sp.toggleLike(tfId);
+            sp.addComment(room1Id, tfId, "이거 얼마야...? 고퀄이다");
+            sp.addComment(room1Id, jiId, "진짜 명품 감성 ㅋㅋ");
+            sp.toggleLike(room1Id, tfId);
             spendingRepository.save(sp);
         });
 
         // test003 단백질 파우더 5kg — 댓글 3개 + 좋아요 2개
         jiSpendings.stream().filter(s -> "단백질 파우더 5kg".equals(s.getMemo())).findFirst().ifPresent(s -> {
             Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
-            sp.addComment(tfId, "이거 맛있어? 나도 운동 시작하려는데");
-            sp.addComment(mjId, "5kg이나 샀어? 진지하네 ㅋㅋ");
-            sp.addComment(jiId, "초코맛 추천! 물이랑 섞으면 맛있음");
-            sp.toggleLike(tfId);
-            sp.toggleLike(mjId);
+            sp.addComment(room1Id, tfId, "이거 맛있어? 나도 운동 시작하려는데");
+            sp.addComment(room1Id, mjId, "5kg이나 샀어? 진지하네 ㅋㅋ");
+            sp.addComment(room1Id, jiId, "초코맛 추천! 물이랑 섞으면 맛있음");
+            sp.toggleLike(room1Id, tfId);
+            sp.toggleLike(room1Id, mjId);
             spendingRepository.save(sp);
         });
     }
@@ -289,6 +294,11 @@ public class DataInitializer implements CommandLineRunner {
         User testfriend = userRepository.findByProviderAndProviderId("dummy", "test001").orElse(null);
         User jisu       = userRepository.findByProviderAndProviderId("dummy", "test003").orElse(null);
         if (testfriend == null || jisu == null) return;
+
+        Long room1Id = roomRepository.findByUserId(testfriend.getId()).stream()
+                .filter(r -> "우리 셋 방".equals(r.getName()))
+                .map(r -> r.getId())
+                .findFirst().orElse(1L);
 
         LocalDate jun1  = LocalDate.of(2026, 6, 1);
         LocalDate jun30 = LocalDate.of(2026, 6, 30);
@@ -308,54 +318,54 @@ public class DataInitializer implements CommandLineRunner {
         // ── jisu 현미밥 + 두부 정식 (6/11, 최신) ──
         jiSpendings.stream().filter(s -> "현미밥 + 두부 정식".equals(s.getMemo())).findFirst().ifPresent(s -> {
             Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
-            sp.addComment(tfId, "건강식 제대로 먹네 나도 본받아야겠다");
-            sp.addComment(jiId, "요즘 탄단지 맞춰서 먹으려고 ㅎㅎ 어렵진 않아");
-            sp.toggleLike(tfId);
+            sp.addComment(room1Id, tfId, "건강식 제대로 먹네 나도 본받아야겠다");
+            sp.addComment(room1Id, jiId, "요즘 탄단지 맞춰서 먹으려고 ㅎㅎ 어렵진 않아");
+            sp.toggleLike(room1Id, tfId);
             spendingRepository.save(sp);
         });
 
         // ── jisu 두유 + 과일 (6/11, 최신) ──
         jiSpendings.stream().filter(s -> "두유 + 과일".equals(s.getMemo())).findFirst().ifPresent(s -> {
             Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
-            sp.addComment(tfId, "아침 루틴 완전 좋다 나도 해봐야지");
-            sp.toggleLike(tfId);
+            sp.addComment(room1Id, tfId, "아침 루틴 완전 좋다 나도 해봐야지");
+            sp.toggleLike(room1Id, tfId);
             spendingRepository.save(sp);
         });
 
         // ── testfriend 헬스장 1일권 (6/10) ──
         tfSpendings.stream().filter(s -> "헬스장 1일권".equals(s.getMemo())).findFirst().ifPresent(s -> {
             Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
-            sp.addComment(jiId, "드디어!! 어떤 운동 했어?");
-            sp.addComment(tfId, "가슴이랑 삼두 했음 ㅋㅋ 생각보다 힘들더라");
-            sp.addComment(jiId, "ㅋㅋㅋ 꾸준히 하면 돼 우리 같이 자극받자");
-            sp.toggleLike(jiId);
+            sp.addComment(room1Id, jiId, "드디어!! 어떤 운동 했어?");
+            sp.addComment(room1Id, tfId, "가슴이랑 삼두 했음 ㅋㅋ 생각보다 힘들더라");
+            sp.addComment(room1Id, jiId, "ㅋㅋㅋ 꾸준히 하면 돼 우리 같이 자극받자");
+            sp.toggleLike(room1Id, jiId);
             spendingRepository.save(sp);
         });
 
         // ── testfriend 친구 저녁 삼겹살 (6/10) ──
         tfSpendings.stream().filter(s -> "친구 저녁 삼겹살".equals(s.getMemo())).findFirst().ifPresent(s -> {
             Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
-            sp.addComment(jiId, "헬스하고 바로 삼겹살?? ㅋㅋㅋㅋ 보상심리인가");
-            sp.addComment(tfId, "치팅데이라고 생각해 😂");
-            sp.toggleLike(jiId);
+            sp.addComment(room1Id, jiId, "헬스하고 바로 삼겹살?? ㅋㅋㅋㅋ 보상심리인가");
+            sp.addComment(room1Id, tfId, "치팅데이라고 생각해 😂");
+            sp.toggleLike(room1Id, jiId);
             spendingRepository.save(sp);
         });
 
         // ── jisu 근육통 파스 (6/10) ──
         jiSpendings.stream().filter(s -> "근육통 파스".equals(s.getMemo())).findFirst().ifPresent(s -> {
             Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
-            sp.addComment(tfId, "크로스핏 후유증이야? ㅋㅋ 괜찮아?");
-            sp.addComment(jiId, "허벅지가 죽을 것 같아... 내일 회복되겠지");
-            sp.toggleLike(tfId);
+            sp.addComment(room1Id, tfId, "크로스핏 후유증이야? ㅋㅋ 괜찮아?");
+            sp.addComment(room1Id, jiId, "허벅지가 죽을 것 같아... 내일 회복되겠지");
+            sp.toggleLike(room1Id, tfId);
             spendingRepository.save(sp);
         });
 
         // ── jisu 크로스핏 체험 (6/9) ──
         jiSpendings.stream().filter(s -> "크로스핏 체험".equals(s.getMemo())).findFirst().ifPresent(s -> {
             Spending sp = spendingRepository.findById(s.getId()).orElseThrow();
-            sp.addComment(tfId, "크로스핏 어때? 나도 해보고 싶었는데");
-            sp.addComment(jiId, "생각보다 재밌어! 강도가 세서 같이 가면 좋을 것 같아");
-            sp.toggleLike(tfId);
+            sp.addComment(room1Id, tfId, "크로스핏 어때? 나도 해보고 싶었는데");
+            sp.addComment(room1Id, jiId, "생각보다 재밌어! 강도가 세서 같이 가면 좋을 것 같아");
+            sp.toggleLike(room1Id, tfId);
             spendingRepository.save(sp);
         });
     }

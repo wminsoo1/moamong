@@ -77,32 +77,32 @@ public class Spending {
         if (createdAt == null) createdAt = LocalDateTime.now();
     }
 
-    public SpendingComment addComment(Long userId, String content) {
+    public SpendingComment addComment(Long roomId, Long userId, String content) {
         if (content == null || content.isBlank()) throw new IllegalArgumentException("댓글 내용을 입력해주세요");
-        SpendingComment comment = SpendingComment.of(this, userId, content);
+        SpendingComment comment = SpendingComment.of(this, roomId, userId, content);
         comments.add(comment);
         return comment;
     }
 
-    public SpendingComment addVoiceComment(Long userId, String audioUrl) {
+    public SpendingComment addVoiceComment(Long roomId, Long userId, String audioUrl) {
         if (audioUrl == null || audioUrl.isBlank()) throw new IllegalArgumentException("오디오 URL을 입력해주세요");
-        SpendingComment comment = SpendingComment.ofVoice(this, userId, audioUrl);
+        SpendingComment comment = SpendingComment.ofVoice(this, roomId, userId, audioUrl);
         comments.add(comment);
         return comment;
     }
 
-    public boolean isLikedBy(Long userId) {
-        return likes.stream().anyMatch(l -> l.getUserId().equals(userId));
+    public boolean isLikedBy(Long roomId, Long userId) {
+        return likes.stream().anyMatch(l -> l.getRoomId().equals(roomId) && l.getUserId().equals(userId));
     }
 
-    public void toggleLike(Long userId) {
-        boolean removed = likes.removeIf(l -> l.getUserId().equals(userId));
-        if (!removed) likes.add(SpendingLike.of(this, userId));
+    public void toggleLike(Long roomId, Long userId) {
+        boolean removed = likes.removeIf(l -> l.getRoomId().equals(roomId) && l.getUserId().equals(userId));
+        if (!removed) likes.add(SpendingLike.of(this, roomId, userId));
     }
 
-    public void removeComment(Long commentId, Long requesterId) {
+    public void removeComment(Long roomId, Long commentId, Long requesterId) {
         SpendingComment comment = comments.stream()
-                .filter(c -> c.getId().equals(commentId))
+                .filter(c -> c.getId().equals(commentId) && c.getRoomId().equals(roomId))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "댓글이 없습니다"));
         comment.validateOwner(requesterId);

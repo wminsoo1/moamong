@@ -9,7 +9,7 @@ export function useDeleteComment(spendingId: number, roomId: number) {
 
   return useMutation({
     mutationFn: (commentId: number) =>
-      apiClient(`/api/spendings/${spendingId}/comments/${commentId}`, { method: "DELETE" }),
+      apiClient(`/api/rooms/${roomId}/spendings/${spendingId}/comments/${commentId}`, { method: "DELETE" }),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: roomKey });
       const prev = queryClient.getQueriesData<RoomSpending[]>({ queryKey: roomKey });
@@ -22,7 +22,7 @@ export function useDeleteComment(spendingId: number, roomId: number) {
       ctx?.prev.forEach(([key, data]) => queryClient.setQueryData(key, data));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: spendingKeys.comments(spendingId) });
+      queryClient.invalidateQueries({ queryKey: spendingKeys.comments(roomId, spendingId) });
     },
   });
 }

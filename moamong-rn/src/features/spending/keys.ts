@@ -5,5 +5,5 @@ export const spendingKeys = {
   recurring: () => ["recurring-spendings"] as const,
   memberMonthly: (userId: number, year: number, month: number) => ["spendings", "member", userId, year, month] as const,
   roomMonthly: (roomId: number, year: number, month: number) => ["spendings", "room", roomId, year, month] as const,
-  comments: (spendingId: number) => ["spendings", "comments", spendingId] as const,
+  comments: (roomId: number, spendingId: number) => ["spendings", "comments", roomId, spendingId] as const,
 };

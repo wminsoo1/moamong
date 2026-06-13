@@ -30,11 +30,13 @@ public class SpendingCommentService {
     private final PresignedUrlService presignedUrlService;
 
     @Transactional(readOnly = true)
-    public List<SpendingCommentResponse> getComments(Long spendingId) {
+    public List<SpendingCommentResponse> getComments(Long roomId, Long spendingId) {
         Spending spending = spendingRepository.findByIdWithComments(spendingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "지출이 없습니다"));
 
-        List<SpendingComment> comments = spending.getComments();
+        List<SpendingComment> comments = spending.getComments().stream()
+                .filter(c -> roomId.equals(c.getRoomId()))
+                .toList();
         if (comments.isEmpty()) return List.of();
 
         List<Long> userIds = comments.stream().map(SpendingComment::getUserId).distinct().toList();
@@ -63,12 +65,12 @@ public class SpendingCommentService {
             if (request.getAudioUrl() == null || request.getAudioUrl().isBlank()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "오디오 URL을 입력해주세요");
             }
-            comment = spending.addVoiceComment(userId, request.getAudioUrl());
+            comment = spending.addVoiceComment(roomId, userId, request.getAudioUrl());
         } else {
             if (request.getContent() == null || request.getContent().isBlank()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "댓글 내용을 입력해주세요");
             }
-            comment = spending.addComment(userId, request.getContent());
+            comment = spending.addComment(roomId, userId, request.getContent());
         }
         spendingRepository.saveAndFlush(spending);
 
@@ -85,11 +87,12 @@ public class SpendingCommentService {
     }
 
     @Transactional
-    public void deleteComment(Long spendingId, Long commentId, Long userId) {
+    public void deleteComment(Long roomId, Long spendingId, Long commentId, Long userId) {
+        roomQueryService.validateMember(roomId, userId);
         Spending spending = spendingRepository.findByIdWithComments(spendingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "지출이 없습니다"));
         SpendingComment comment = spending.getComments().stream()
-                .filter(c -> c.getId().equals(commentId))
+                .filter(c -> c.getId().equals(commentId) && roomId.equals(c.getRoomId()))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "댓글이 없습니다"));
         comment.validateOwner(userId);

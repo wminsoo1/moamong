@@ -5,7 +5,7 @@ import { SpendingComment } from "../types";
 
 export function useSpendingComments(roomId: number, spendingId: number | null) {
   return useQuery({
-    queryKey: spendingKeys.comments(spendingId ?? 0),
+    queryKey: spendingKeys.comments(roomId, spendingId ?? 0),
     queryFn: () => apiClient<SpendingComment[]>(`/api/rooms/${roomId}/spendings/${spendingId}/comments`),
     enabled: spendingId != null,
   });
