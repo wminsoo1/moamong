@@ -56,6 +56,21 @@ public class UserCommandService {
     }
 
     @Transactional
+    public void updateUsername(Long userId, String username) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (username.equals(user.getUsername())) return;
+        if (userRepository.existsByUsername(username)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 사용 중인 username입니다");
+        }
+        try {
+            user.assignUsername(username);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    @Transactional
     public void updateNickname(Long userId, String nickname) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));

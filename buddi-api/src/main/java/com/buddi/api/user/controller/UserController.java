@@ -132,7 +132,7 @@ public class UserController {
     public ResponseEntity<Void> updateMe(@RequestBody @Valid UserUpdateRequest request,
                                          Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        userCommandService.updateNickname(principal.getUserId(), request.getNickname());
+        userCommandService.updateUsername(principal.getUserId(), request.getUsername());
         return ResponseEntity.ok().build();
     }
 

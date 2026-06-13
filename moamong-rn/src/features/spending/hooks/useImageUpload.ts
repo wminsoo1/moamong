@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import { apiClient } from "@/src/lib/api";
 import { toast } from "@/src/lib/toast";
 
@@ -26,8 +27,18 @@ export function useImageUpload(initialUrl?: string | null) {
     setImageUri(asset.uri);
     setUploading(true);
     try {
-      const filename = asset.uri.split("/").pop() ?? "photo.jpg";
-      const mimeType = asset.mimeType ?? "image/jpeg";
+      const needsResize = (asset.width ?? 0) > 1200 || (asset.height ?? 0) > 1200;
+      const resized = needsResize
+        ? await ImageManipulator.manipulateAsync(
+            asset.uri,
+            [{ resize: { width: 1200 } }],
+            { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+          )
+        : null;
+
+      const uri = resized?.uri ?? asset.uri;
+      const filename = uri.split("/").pop() ?? "photo.jpg";
+      const mimeType = resized ? "image/jpeg" : (asset.mimeType ?? "image/jpeg");
 
       const { uploadUrl, fileUrl } = await apiClient<PresignedResponse>(
         `/api/upload/presigned?filename=${encodeURIComponent(filename)}&contentType=${encodeURIComponent(mimeType)}`
@@ -39,7 +50,7 @@ export function useImageUpload(initialUrl?: string | null) {
         xhr.setRequestHeader("Content-Type", mimeType);
         xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(`S3 upload failed: ${xhr.status}`)));
         xhr.onerror = () => reject(new Error("Network error"));
-        xhr.send({ uri: asset.uri, type: mimeType, name: filename });
+        xhr.send({ uri, type: mimeType, name: filename });
       });
 
       setImageUrl(fileUrl);
