@@ -6,10 +6,12 @@ import com.buddi.api.spending.dto.SpendingCommentRequest;
 import com.buddi.api.spending.dto.SpendingCommentResponse;
 import com.buddi.api.spending.entity.Spending;
 import com.buddi.api.spending.entity.SpendingComment;
+import com.buddi.api.spending.notification.event.SpendingCommentedEvent;
 import com.buddi.api.spending.repository.SpendingRepository;
 import com.buddi.api.user.entity.User;
 import com.buddi.api.user.service.UserQueryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ public class SpendingCommentService {
     private final RoomQueryService roomQueryService;
     private final UserQueryService userQueryService;
     private final PresignedUrlService presignedUrlService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<SpendingCommentResponse> getComments(Long roomId, Long spendingId) {
@@ -73,6 +76,11 @@ public class SpendingCommentService {
             comment = spending.addComment(roomId, userId, request.getContent());
         }
         spendingRepository.saveAndFlush(spending);
+
+        if (!userId.equals(spending.getUserId())) {
+            eventPublisher.publishEvent(new SpendingCommentedEvent(
+                    spendingId, userId, spending.getUserId(), spending.getCategoryName(), spending.getMemo(), spending.getAmount()));
+        }
 
         String username = userQueryService.findById(userId).getUsername();
         return new SpendingCommentResponse(

@@ -33,6 +33,29 @@ public class FcmService {
         }
     }
 
+    public void sendCommentNotification(String token, String actorUsername, String categoryName, String memo, long amount) {
+        String title = actorUsername + "님이 댓글을 달았어요";
+        String label = (memo != null && !memo.isBlank()) ? memo.trim()
+                : (categoryName != null && !categoryName.isBlank()) ? categoryName.trim() : "지출";
+        String body = label + " · " + String.format("%,d", amount) + "원";
+
+        Message message = Message.builder()
+                .setToken(token)
+                .setNotification(Notification.builder()
+                        .setTitle(title)
+                        .setBody(body)
+                        .build())
+                .putData("screen", "/(tabs)/room")
+                .build();
+        try {
+            String messageId = FirebaseMessaging.getInstance().send(message);
+            log.info("FCM 댓글 알림 전송 성공 (messageId: {})", messageId);
+        } catch (FirebaseMessagingException e) {
+            log.warn("FCM 댓글 알림 전송 실패 (token: {}): {}", token, e.getMessage());
+            throw new RuntimeException("FCM 전송 실패", e);
+        }
+    }
+
     public void sendHotItemNotification(String token, String senderNickname, long amount, String hotItemUrl, String hotItemMemo, String review) {
         String title = (hotItemMemo != null && !hotItemMemo.isBlank()) ? hotItemMemo.trim() : "핫템 공유";
         String body = senderNickname + "님 · " + String.format("%,d", amount) + "원"

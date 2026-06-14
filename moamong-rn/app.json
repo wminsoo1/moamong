@@ -41,6 +41,7 @@
     },
     "android": {
       "package": "com.moamong.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
