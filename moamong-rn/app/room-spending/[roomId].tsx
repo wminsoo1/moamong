@@ -114,14 +114,20 @@ function InlineComments({
   const startRecording = async () => {
     const { granted } = await AudioModule.requestRecordingPermissionsAsync();
     if (!granted) return;
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    const rec = new AudioModule.AudioRecorder(RecordingPresets.HIGH_QUALITY);
-    await rec.prepareToRecordAsync();
-    rec.record();
-    recorderRef.current = rec;
-    setRecordState("recording");
-    setSeconds(0);
-    timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
+    try {
+      await setIsAudioActiveAsync(true);
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      const rec = new AudioModule.AudioRecorder(RecordingPresets.HIGH_QUALITY);
+      await rec.prepareToRecordAsync();
+      rec.record();
+      recorderRef.current = rec;
+      setRecordState("recording");
+      setSeconds(0);
+      timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
+    } catch (e) {
+      console.error("[Recording] 시작 실패", e);
+      toast.show("녹음을 시작할 수 없습니다");
+    }
   };
 
   const stopRecording = async () => {
@@ -130,15 +136,19 @@ function InlineComments({
     if (!rec) return;
     await rec.stop();
     await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+    await setIsAudioActiveAsync(false);
     const uri = rec.uri;
     setLocalUri(uri ?? null);
     setRecordState("recorded");
-    // recorderRef는 유지 — 파일이 삭제되지 않도록
   };
 
   const cancelRecording = () => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-    recorderRef.current?.stop().catch(() => {});
+    if (recorderRef.current) {
+      recorderRef.current.stop().catch(() => {});
+      setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+      setIsAudioActiveAsync(false).catch(() => {});
+    }
     recorderRef.current = null;
     setLocalUri(null);
     setRecordState("idle");
