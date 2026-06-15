@@ -68,6 +68,9 @@ function VoicePlayer({ audioUrl }: { audioUrl: string }) {
       player.pause();
     } else {
       await setIsAudioActiveAsync(true);
+      if (status.duration > 0 && status.currentTime >= status.duration) {
+        player.seekTo(0);
+      }
       player.play();
     }
   };
