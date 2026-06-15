@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -77,9 +78,16 @@ public class SpendingCommentService {
         }
         spendingRepository.saveAndFlush(spending);
 
+        Set<Long> recipients = spending.getComments().stream()
+                .filter(c -> roomId.equals(c.getRoomId()) && !userId.equals(c.getUserId()))
+                .map(SpendingComment::getUserId)
+                .collect(Collectors.toSet());
         if (!userId.equals(spending.getUserId())) {
+            recipients.add(spending.getUserId());
+        }
+        for (Long recipientId : recipients) {
             eventPublisher.publishEvent(new SpendingCommentedEvent(
-                    spendingId, userId, spending.getUserId(), spending.getCategoryName(), spending.getMemo(), spending.getAmount()));
+                    spendingId, userId, recipientId, spending.getCategoryName(), spending.getMemo(), spending.getAmount()));
         }
 
         String username = userQueryService.findById(userId).getUsername();
