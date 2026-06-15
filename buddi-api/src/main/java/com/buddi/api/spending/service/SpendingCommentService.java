@@ -87,7 +87,8 @@ public class SpendingCommentService {
         }
         for (Long recipientId : recipients) {
             eventPublisher.publishEvent(new SpendingCommentedEvent(
-                    spendingId, userId, recipientId, spending.getCategoryName(), spending.getMemo(), spending.getAmount()));
+                    spendingId, userId, recipientId, spending.getCategoryName(), spending.getMemo(), spending.getAmount(),
+                    comment.getType(), comment.getContent()));
         }
 
         String username = userQueryService.findById(userId).getUsername();

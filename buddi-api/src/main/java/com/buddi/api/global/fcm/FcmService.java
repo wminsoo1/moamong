@@ -33,11 +33,10 @@ public class FcmService {
         }
     }
 
-    public void sendCommentNotification(String token, String actorUsername, String categoryName, String memo, long amount) {
+    public void sendCommentNotification(String token, String actorUsername, String commentType, String commentContent) {
         String title = actorUsername + "님이 댓글을 달았어요";
-        String label = (memo != null && !memo.isBlank()) ? memo.trim()
-                : (categoryName != null && !categoryName.isBlank()) ? categoryName.trim() : "지출";
-        String body = label + " · " + String.format("%,d", amount) + "원";
+        String body = "VOICE".equals(commentType) ? "음성 댓글"
+                : (commentContent != null && !commentContent.isBlank()) ? commentContent.trim() : "댓글";
 
         Message message = Message.builder()
                 .setToken(token)

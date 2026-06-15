@@ -17,6 +17,6 @@ public class SpendingCommentOutboxEventListener {
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void saveOutbox(SpendingCommentedEvent event) {
         spendingCommentOutboxRepository.save(SpendingCommentOutbox.of(
-                event.spendingId(), event.actorId(), event.ownerId(), event.categoryName(), event.memo(), event.amount()));
+                event.spendingId(), event.actorId(), event.ownerId(), event.categoryName(), event.memo(), event.amount(), event.commentType(), event.commentContent()));
     }
 }

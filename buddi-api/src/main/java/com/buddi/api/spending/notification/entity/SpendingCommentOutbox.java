@@ -37,6 +37,12 @@ public class SpendingCommentOutbox {
     @Column(nullable = false)
     private long amount;
 
+    @Column(nullable = false)
+    private String commentType;
+
+    @Column(length = 500)
+    private String commentContent;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OutboxStatus status;
@@ -67,7 +73,7 @@ public class SpendingCommentOutbox {
         this.status = OutboxStatus.PROCESSED;
     }
 
-    public static SpendingCommentOutbox of(Long spendingId, Long actorId, Long ownerId, String categoryName, String memo, long amount) {
+    public static SpendingCommentOutbox of(Long spendingId, Long actorId, Long ownerId, String categoryName, String memo, long amount, String commentType, String commentContent) {
         SpendingCommentOutbox outbox = new SpendingCommentOutbox();
         outbox.spendingId = spendingId;
         outbox.actorId = actorId;
@@ -75,6 +81,8 @@ public class SpendingCommentOutbox {
         outbox.categoryName = categoryName;
         outbox.memo = memo;
         outbox.amount = amount;
+        outbox.commentType = commentType;
+        outbox.commentContent = commentContent;
         return outbox;
     }
 }

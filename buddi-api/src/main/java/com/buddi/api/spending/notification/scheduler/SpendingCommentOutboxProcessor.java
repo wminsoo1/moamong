@@ -47,7 +47,7 @@ public class SpendingCommentOutboxProcessor {
             return;
         }
 
-        fcmService.sendCommentNotification(token, actor.getUsername(), outbox.getCategoryName(), outbox.getMemo(), outbox.getAmount());
+        fcmService.sendCommentNotification(token, actor.getUsername(), outbox.getCommentType(), outbox.getCommentContent());
         outbox.markProcessed();
     }
 }
