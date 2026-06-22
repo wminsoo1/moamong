@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Toast } from "@/src/components/Toast";
 import { toast } from "@/src/lib/toast";
+import * as Updates from "expo-updates";
 
 function ToastHost() {
   const [message, setMessage] = useState<string | null>(null);
@@ -41,7 +42,22 @@ const queryClient = new QueryClient({
   }),
 });
 
+async function checkForUpdate() {
+  if (!Updates.isEnabled) return;
+  try {
+    const result = await Updates.checkForUpdateAsync();
+    if (result.isAvailable) {
+      await Updates.fetchUpdateAsync();
+      await Updates.reloadAsync();
+    }
+  } catch {}
+}
+
 export default function RootLayout() {
+  useEffect(() => {
+    checkForUpdate();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
