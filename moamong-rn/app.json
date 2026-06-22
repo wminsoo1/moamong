@@ -70,7 +70,12 @@
       "expo-status-bar",
       "expo-web-browser",
       "expo-apple-authentication",
-      ["@react-native-seoul/kakao-login", { "kakaoAppKey": "f481347e0578b734ef7deee10b002433" }],
+      [
+        "@react-native-seoul/kakao-login",
+        {
+          "kakaoAppKey": "f481347e0578b734ef7deee10b002433"
+        }
+      ],
       "@react-native-firebase/app",
       [
         "expo-notifications",
@@ -92,9 +97,18 @@
         {
           "ios": {
             "extraPods": [
-              { "name": "GoogleUtilities", "modular_headers": true }
+              {
+                "name": "GoogleUtilities",
+                "modular_headers": true
+              }
             ]
           }
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.999608164058-c0t7bdcjdnock8t7f1d3gvjueegfegc8"
         }
       ]
     ],

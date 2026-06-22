@@ -2,9 +2,14 @@ import { View, Text, Image, Pressable, StyleSheet, Platform, ActivityIndicator, 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { login as kakaoLogin } from "@react-native-seoul/kakao-login";
 import { signInAsync, AppleAuthenticationScope, AppleAuthenticationButton, AppleAuthenticationButtonType, AppleAuthenticationButtonStyle } from "expo-apple-authentication";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { router } from "expo-router";
 import { setSessionId, apiClient } from "@/src/lib/api";
 import { useState } from "react";
+
+GoogleSignin.configure({
+  iosClientId: "999608164058-c0t7bdcjdnock8t7f1d3gvjueegfegc8.apps.googleusercontent.com",
+});
 
 const DEBUG_USERS = [
   { username: "testfriend", label: "테스트친구" },
@@ -64,6 +69,28 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.data?.idToken;
+      if (!idToken) throw new Error("ID 토큰을 가져올 수 없습니다");
+      const data = await apiClient<{ sessionId: string; newUser: boolean }>("/api/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ idToken }),
+      });
+      await setSessionId(data.sessionId);
+      router.replace(data.newUser ? "/(auth)/onboarding" : "/(tabs)/calendar");
+    } catch (e: any) {
+      if (e.code !== "SIGN_IN_CANCELLED") {
+        Alert.alert("로그인 실패", "구글 로그인 중 오류가 발생했습니다.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDebugLogin = async (username: string) => {
     setLoading(true);
     try {
@@ -98,10 +125,27 @@ export default function LoginScreen() {
             onPress={handleKakaoLogin}
             disabled={loading}
           >
-            {loading
-              ? <ActivityIndicator color="#191919" />
-              : <Text style={styles.kakaoText}>카카오로 시작하기</Text>
-            }
+            {loading ? <ActivityIndicator color="#191919" /> : (
+              <View style={styles.socialRow}>
+                <Image source={require("@/assets/icon-kakao.png")} style={styles.socialIcon} />
+                <Text style={styles.kakaoText}>카카오로 시작하기</Text>
+              </View>
+            )}
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.button, styles.googleButton, pressed && { opacity: 0.8 }, loading && { opacity: 0.6 }]}
+            onPress={handleGoogleLogin}
+            disabled={loading}
+          >
+            {loading ? <ActivityIndicator color="#191919" /> : (
+              <View style={styles.socialRow}>
+                <View style={styles.googleIconBox}>
+                  <Text style={styles.googleIconText}>G</Text>
+                </View>
+                <Text style={styles.googleText}>구글로 시작하기</Text>
+              </View>
+            )}
           </Pressable>
 
           {Platform.OS === "ios" && (
@@ -153,6 +197,12 @@ const styles = StyleSheet.create({
   button: { height: 52, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   kakaoButton: { backgroundColor: "#FEE500" },
   kakaoText: { fontSize: 16, fontWeight: "700", color: "#191919" },
+  googleButton: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e8eb" },
+  googleText: { fontSize: 16, fontWeight: "700", color: "#191919" },
+  googleIconBox: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#4285F4", alignItems: "center", justifyContent: "center" },
+  googleIconText: { fontSize: 13, fontWeight: "800", color: "#fff" },
+  socialRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  socialIcon: { width: 22, height: 22, resizeMode: "contain" },
   appleButton: { height: 52 },
 
   // Debug styles
