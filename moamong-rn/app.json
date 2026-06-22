@@ -25,6 +25,7 @@
         },
         "NSPhotoLibraryUsageDescription": "지출 내역에 사진을 첨부해 가계부를 기록하기 위해 사용합니다.",
         "NSCameraUsageDescription": "공유할 아이템 사진을 촬영하기 위해 사용합니다.",
+        "NSMicrophoneUsageDescription": "음성 댓글을 녹음하기 위해 사용합니다.",
         "CFBundleLocalizations": [
           "ko",
           "en"
@@ -78,6 +79,13 @@
         }
       ],
       "expo-audio",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "지출 내역에 사진을 첨부하기 위해 사용합니다.",
+          "cameraPermission": "공유할 아이템 사진을 촬영하기 위해 사용합니다."
+        }
+      ],
       "expo-updates",
       [
         "expo-build-properties",
