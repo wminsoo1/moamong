@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
 
@@ -53,6 +54,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleIllegalState(IllegalStateException e) {
         String message = e.getMessage() != null ? e.getMessage() : "처리 중 오류가 발생했습니다.";
         return ResponseEntity.badRequest().body(Map.of("message", message));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNoResource(NoResourceFoundException e, HttpServletRequest request) {
+        log.warn("Unknown path request (likely bot scan): {}", request.getRequestURI());
+        return ResponseEntity.notFound().build();
     }
 
     @ExceptionHandler(Exception.class)
