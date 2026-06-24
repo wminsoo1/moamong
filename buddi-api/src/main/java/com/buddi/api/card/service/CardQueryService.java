@@ -1,12 +1,15 @@
 package com.buddi.api.card.service;
 
 import com.buddi.api.card.dto.BenefitSearchResponse;
+import com.buddi.api.card.dto.CardResponse;
 import com.buddi.api.card.dto.SearchAliasResponse;
 import com.buddi.api.card.entity.Benefit;
 import com.buddi.api.card.entity.BenefitGroupType;
+import com.buddi.api.card.entity.Card;
 import com.buddi.api.card.entity.DiscountType;
-import com.buddi.api.card.repository.BenefitRepository;
+import com.buddi.api.card.repository.CardRepository;
 import com.buddi.api.card.repository.SearchAliasRepository;
+import com.buddi.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +23,8 @@ import java.util.stream.Stream;
 public class CardQueryService {
 
     private final SearchAliasRepository searchAliasRepository;
-    private final BenefitRepository benefitRepository;
+    private final CardRepository cardRepository;
+    private final UserRepository userRepository;
 
     private static final Set<DiscountType> CONDITIONAL_TYPES = Set.of(DiscountType.GEO_PRICE);
     private static final Set<BenefitGroupType> CONDITIONAL_GROUP_TYPES = Set.of(BenefitGroupType.DYNAMIC);
@@ -31,19 +35,34 @@ public class CardQueryService {
                 .toList();
     }
 
+    public List<CardResponse> getAllCards() {
+        return cardRepository.findAll().stream().map(CardResponse::new).toList();
+    }
+
     public record BenefitSearchResult(
             List<BenefitSearchResponse> benefits,
             List<BenefitSearchResponse> conditionalBenefits,
             List<BenefitSearchResponse> fallbackBenefits
     ) {}
 
-    public BenefitSearchResult searchBenefits(String category, String merchant) {
-        List<Benefit> results;
-        if (merchant != null && !merchant.isBlank()) {
-            results = benefitRepository.findByMerchantOrCategory(merchant, category);
-        } else {
-            results = benefitRepository.findByCategory(category);
+    public BenefitSearchResult searchBenefits(String category, String merchant, Long userId) {
+        List<Long> cardIds = userRepository.findCardIdsByUserId(userId);
+        if (cardIds.isEmpty()) {
+            return new BenefitSearchResult(List.of(), List.of(), List.of());
         }
+
+        List<Card> cards;
+        if (merchant != null && !merchant.isBlank()) {
+            cards = cardRepository.findByIdsWithMatchingBenefitsByMerchantOrCategory(cardIds, merchant, category);
+        } else {
+            cards = cardRepository.findByIdsWithMatchingBenefitsByCategory(cardIds, category);
+        }
+
+        List<Benefit> results = cards.stream()
+                .flatMap(c -> c.getBenefitGroups().stream())
+                .flatMap(bg -> bg.getBenefits().stream())
+                .filter(b -> matchesCategoryOrMerchant(b, category, merchant))
+                .toList();
 
         List<BenefitSearchResponse> all = results.stream()
                 .flatMap(b -> classifyBenefit(b, merchant))
@@ -64,13 +83,16 @@ public class CardQueryService {
                 .comparing((BenefitSearchResponse r) -> "DIRECT".equals(r.matchType()) ? 0 : 1)
                 .thenComparing(BenefitSearchResponse::discountValue, Comparator.reverseOrder()));
 
-        List<BenefitSearchResponse> fallback = normal.isEmpty() && conditional.isEmpty()
-                ? benefitRepository.findFallbackBenefits().stream()
-                    .map(b -> BenefitSearchResponse.of(b, "CATEGORY"))
-                    .toList()
-                : List.of();
+        return new BenefitSearchResult(normal, conditional, List.of());
+    }
 
-        return new BenefitSearchResult(normal, conditional, fallback);
+    private boolean matchesCategoryOrMerchant(Benefit b, String category, String merchant) {
+        if (merchant != null && !merchant.isBlank()) {
+            boolean merchantMatch = b.getMerchants() != null && b.getMerchants().contains(merchant);
+            boolean categoryMatch = b.getCategory() != null && b.getCategory().contains(category);
+            return merchantMatch || categoryMatch;
+        }
+        return b.getCategory() != null && b.getCategory().contains(category);
     }
 
     private Stream<BenefitSearchResponse> classifyBenefit(Benefit benefit, String merchant) {
@@ -78,15 +100,10 @@ public class CardQueryService {
                 && benefit.getMerchants() != null
                 && benefit.getMerchants().contains(merchant);
 
-        boolean categoryMatch = true;
-
         if (directMatch) {
             return Stream.of(BenefitSearchResponse.of(benefit, "DIRECT"));
         }
-        if (categoryMatch) {
-            return Stream.of(BenefitSearchResponse.of(benefit, "CATEGORY"));
-        }
-        return Stream.empty();
+        return Stream.of(BenefitSearchResponse.of(benefit, "CATEGORY"));
     }
 
     private boolean isConditional(BenefitSearchResponse r) {

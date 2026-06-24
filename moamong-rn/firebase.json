@@ -1,0 +1,9 @@
+{
+  "react-native": {
+    "messaging_ios_foreground_presentation_options": {
+      "alert": false,
+      "badge": false,
+      "sound": false
+    }
+  }
+}

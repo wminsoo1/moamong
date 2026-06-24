@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderTopColor: "#f2f4f6",
     borderTopWidth: 1,
-    height: 60,
+    height: 74,
     paddingBottom: 8,
     paddingTop: 8,
     elevation: 0,

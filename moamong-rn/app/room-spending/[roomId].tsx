@@ -27,6 +27,8 @@ import { ko } from "date-fns/locale";
 import { RoomSpending, SpendingComment } from "@/src/features/spending/types";
 
 const AVATAR_COLORS = ["#5B5FC7", "#107C10", "#C43E1C", "#038387", "#8764B8", "#881798", "#004E8C"];
+
+
 const getAvatarColor = (userId: number) => AVATAR_COLORS[userId % AVATAR_COLORS.length];
 
 function ImageViewer({ uri, onClose }: { uri: string; onClose: () => void }) {
@@ -289,20 +291,32 @@ function InlineComments({
 }
 
 export default function RoomSpendingScreen() {
-  const { roomId, name, inviteCode, createdBy } = useLocalSearchParams<{
-    roomId: string; name: string; inviteCode: string; createdBy: string;
+  const { roomId, name, inviteCode, createdBy, openCommentId: openCommentIdParam, scrollToId: scrollToIdParam } = useLocalSearchParams<{
+    roomId: string; name: string; inviteCode: string; createdBy: string; openCommentId?: string; scrollToId?: string;
   }>();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
-  const [openCommentId, setOpenCommentId] = useState<number | null>(null);
+  const [openCommentId, setOpenCommentId] = useState<number | null>(
+    openCommentIdParam ? Number(openCommentIdParam) : null
+  );
   const [commentText, setCommentText] = useState("");
   const [commentCountOverrides, setCommentCountOverrides] = useState<Record<number, number>>({});
   const [manualRefreshing, setManualRefreshing] = useState(false);
+  const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const initialCheckDone = useRef(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const itemRefs = useRef<Record<number, View | null>>({});
+  const pendingScrollId = useRef<number | null>(
+    scrollToIdParam ? Number(scrollToIdParam) : (openCommentIdParam ? Number(openCommentIdParam) : null)
+  );
+  const pendingHighlightId = useRef<number | null>(
+    (scrollToIdParam && !openCommentIdParam) ? Number(scrollToIdParam) : null
+  );
 
   const numericRoomId = Number(roomId);
-  const { data: spendings = [], isLoading, refetch } = useRoomSpendings(numericRoomId, year, month);
+  const { data: spendings = [], isLoading, isError, error, refetch } = useRoomSpendings(numericRoomId, year, month);
   const { data: openComments = [] } = useSpendingComments(numericRoomId, openCommentId);
   const toggleLike = useToggleSpendingLike(numericRoomId, year, month);
   const markRead = useMarkRoomRead();
@@ -312,9 +326,62 @@ export default function RoomSpendingScreen() {
   useEffect(() => { markRead.mutate(numericRoomId); }, [roomId]);
 
   useEffect(() => {
+    if (!isError) return;
+    const status = (error as any)?.status;
+    if (status === 403 || status === 404) {
+      toast.show("방을 찾을 수 없거나 접근 권한이 없어요");
+      router.back();
+    }
+  }, [isError]);
+
+  useEffect(() => {
+    if (isLoading || isError || !openCommentIdParam || initialCheckDone.current) return;
+    initialCheckDone.current = true;
+    const paramId = Number(openCommentIdParam);
+    const found = spendings.some((s) => s.id === paramId);
+    if (!found) {
+      toast.show("해당 지출이 삭제되었거나 다른 달에 있어요");
+      setOpenCommentId(null);
+    }
+  }, [isLoading, isError, spendings]);
+
+  useEffect(() => {
+    if (!openCommentIdParam) return;
+    const id = Number(openCommentIdParam);
+    setOpenCommentId(id);
+    if (scrollToIdParam || openCommentIdParam) {
+      pendingScrollId.current = scrollToIdParam ? Number(scrollToIdParam) : id;
+    }
+    pendingHighlightId.current = (scrollToIdParam && !openCommentIdParam) ? Number(scrollToIdParam) : null;
+  }, [openCommentIdParam, scrollToIdParam]);
+
+  useEffect(() => {
     if (openCommentId == null) return;
     setCommentCountOverrides(prev => ({ ...prev, [openCommentId]: openComments.length }));
-  }, [openCommentId, openComments]);
+  }, [openCommentId, openComments.length]);
+
+  useEffect(() => {
+    if (isLoading || !pendingScrollId.current) return;
+    const targetId = pendingScrollId.current;
+    const timeout = setTimeout(() => {
+      pendingScrollId.current = null;
+      const view = itemRefs.current[targetId];
+      if (!view || !scrollRef.current) return;
+      view.measureLayout(
+        scrollRef.current as any,
+        (_x: number, y: number) => {
+          scrollRef.current?.scrollTo({ y: Math.max(0, y - 20), animated: true });
+          if (pendingHighlightId.current === targetId) {
+            pendingHighlightId.current = null;
+            setHighlightedId(targetId);
+            setTimeout(() => setHighlightedId(null), 2500);
+          }
+        },
+        () => {}
+      );
+    }, 150);
+    return () => clearTimeout(timeout);
+  }, [isLoading]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, RoomSpending[]>();
@@ -342,7 +409,7 @@ export default function RoomSpendingScreen() {
         <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.headerBack, pressed && { opacity: 0.5 }]}>
           <ChevronLeft size={24} color="#191f28" />
         </Pressable>
-        <Text style={styles.headerTitle}>{name} 가계부</Text>
+        <Text style={styles.headerTitle}>{name ? `${name} 가계부` : "방 가계부"}</Text>
         <Pressable
           onPress={() => router.push({ pathname: "/room-spending-settings/[roomId]", params: { roomId, name, inviteCode, createdBy } })}
           style={({ pressed }) => [styles.headerBack, pressed && { opacity: 0.5 }]}
@@ -352,6 +419,7 @@ export default function RoomSpendingScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
         refreshControl={<RefreshControl refreshing={manualRefreshing} onRefresh={async () => { setManualRefreshing(true); await refetch(); setManualRefreshing(false); }} />}
@@ -381,7 +449,8 @@ export default function RoomSpendingScreen() {
                 const isOpen = openCommentId === item.id;
                 const displayCount = commentCountOverrides[item.id] ?? item.commentCount;
                 return (
-                  <View key={item.id} style={styles.card}>
+                  <View key={item.id} style={[styles.cardWrapper, highlightedId === item.id && styles.cardWrapperHighlighted]} ref={(ref) => { itemRefs.current[item.id] = ref; }}>
+                    <View style={styles.card}>
                     <View style={styles.row}>
                       <View style={{ position: "relative" }}>
                         <View style={[styles.iconBox, { backgroundColor: color }]}>
@@ -393,7 +462,7 @@ export default function RoomSpendingScreen() {
                           </View>
                         )}
                       </View>
-                      <View style={{ flex: 1 }}>
+                      <View style={{ flex: 1, height: 36, justifyContent: "space-between" }}>
                         <View style={styles.nameRow}>
                           <Text style={styles.categoryName} numberOfLines={1}>{item.memo || item.categoryName}</Text>
                           {item.createdAt && (
@@ -475,6 +544,7 @@ export default function RoomSpendingScreen() {
                         onCommentTextChange={setCommentText}
                       />
                     )}
+                    </View>
                   </View>
                 );
               })}
@@ -500,13 +570,23 @@ const styles = StyleSheet.create({
   empty: { textAlign: "center", color: "#adb5bd", fontSize: 14, paddingVertical: 60 },
   dateGroup: { marginBottom: 12 },
   dateLabel: { fontSize: 12, fontWeight: "700", color: "#8b95a1", marginBottom: 6, marginLeft: 4 },
-  card: {
-    backgroundColor: "#fff",
+  cardWrapper: {
     borderRadius: 14,
     marginBottom: 6,
+    backgroundColor: "#fff",
+  },
+  cardWrapperHighlighted: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  card: {
+    borderRadius: 14,
     overflow: "hidden",
   },
-  row: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
+  row: { flexDirection: "row", alignItems: "flex-start", paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
   iconBox: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   imageBadge: {
     position: "absolute", bottom: -2, right: -2,
@@ -516,12 +596,12 @@ const styles = StyleSheet.create({
   },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   categoryName: { fontSize: 14, fontWeight: "600", color: "#191f28", flexShrink: 1 },
-  metaRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   avatarDot: { width: 14, height: 14, borderRadius: 7, alignItems: "center", justifyContent: "center" },
   avatarDotText: { fontSize: 8, fontWeight: "700", color: "#fff" },
   username: { fontSize: 11, color: "#8b95a1", fontWeight: "500" },
   metaSep: { fontSize: 11, color: "#adb5bd", flex: 1 },
-  amountCol: { alignItems: "flex-end", gap: 4 },
+  amountCol: { alignItems: "flex-end", justifyContent: "space-between", height: 36 },
   amount: { fontSize: 14, fontWeight: "700", color: "#191f28" },
   itemTime: { fontSize: 11, color: "#adb5bd" },
   image: { width: "100%", height: 180 },

@@ -1,6 +1,7 @@
 package com.buddi.api.spending.notification.scheduler;
 
 import com.buddi.api.global.fcm.FcmService;
+import com.buddi.api.room.service.RoomQueryService;
 import com.buddi.api.spending.notification.entity.SpendingCommentOutbox;
 import com.buddi.api.spending.notification.repository.SpendingCommentOutboxRepository;
 import com.buddi.api.user.entity.User;
@@ -18,6 +19,7 @@ public class SpendingCommentOutboxProcessor {
 
     private final SpendingCommentOutboxRepository spendingCommentOutboxRepository;
     private final UserQueryService userQueryService;
+    private final RoomQueryService roomQueryService;
     private final FcmService fcmService;
 
     @Async("notificationExecutor")
@@ -47,7 +49,9 @@ public class SpendingCommentOutboxProcessor {
             return;
         }
 
-        fcmService.sendCommentNotification(token, actor.getUsername(), outbox.getCommentType(), outbox.getCommentContent());
+        Long roomId = roomQueryService.getFirstSharedNonSystemRoomId(outbox.getActorId(), outbox.getOwnerId());
+        String roomName = roomId != null ? roomQueryService.getRoomName(roomId) : null;
+        fcmService.sendCommentNotification(token, actor.getUsername(), outbox.getCommentType(), outbox.getCommentContent(), outbox.getSpendingId(), roomId, roomName);
         outbox.markProcessed();
     }
 }

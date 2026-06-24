@@ -39,6 +39,7 @@ public class SpendingOutboxProcessor {
             if (!hidden.contains(spending.getCategoryGroup())) {
                 for (Long roomId : roomQueryService.getRoomIds(outbox.getSenderId())) {
                     if (roomQueryService.isSystemRoom(roomId)) continue;
+                    String roomName = roomQueryService.getRoomName(roomId);
                     for (Long receiverId : roomQueryService.getRoomMemberIds(roomId, outbox.getSenderId())) {
                         if (!roomNotificationService.isEnabled(receiverId, roomId)) continue;
                         List<String> receiverHidden = userQueryService.getHiddenCategoryGroups(receiverId);
@@ -46,7 +47,8 @@ public class SpendingOutboxProcessor {
                         if (!spendingNotificationSentRepository.existsByOutboxIdAndReceiverId(outboxId, receiverId)) {
                             spendingNotificationSentRepository.save(SpendingNotificationSent.of(
                                     outboxId, outbox.getSenderId(), receiverId,
-                                    outbox.getAmount(), outbox.getCategoryName(), outbox.getMemo()));
+                                    outbox.getAmount(), outbox.getCategoryName(), outbox.getMemo(),
+                                    outbox.getSpendingId(), roomId, roomName));
                         }
                     }
                 }

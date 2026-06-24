@@ -1,5 +1,6 @@
 package com.buddi.api.user.entity;
 
+import com.buddi.api.card.entity.Card;
 import com.buddi.api.spending.entity.SpendingType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -62,6 +63,9 @@ public class User {
     @CollectionTable(name = "user_hidden_categories", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "category_group")
     private Set<String> hiddenCategoryGroups = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserCard> userCards = new ArrayList<>();
 
     @Builder(access = AccessLevel.PRIVATE)
     private User(String provider, String providerId, String nickname) {
@@ -149,6 +153,17 @@ public class User {
 
     public boolean isDeleted() {
         return this.deletedAt != null;
+    }
+
+    public void addCard(Card card) {
+        boolean duplicate = userCards.stream()
+                .anyMatch(uc -> uc.getCard().getId().equals(card.getId()));
+        if (duplicate) throw new IllegalStateException("이미 등록된 카드입니다");
+        userCards.add(UserCard.of(this, card));
+    }
+
+    public void removeCard(Long cardId) {
+        userCards.removeIf(uc -> uc.getCard().getId().equals(cardId));
     }
 
     private static final List<String> DEFAULT_GROUP_ORDER = List.of(

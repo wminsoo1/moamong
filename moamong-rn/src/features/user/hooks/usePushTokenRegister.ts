@@ -16,11 +16,30 @@ Notifications.setNotificationHandler({
 });
 
 function handleNotificationData(data?: Record<string, string>) {
+  const roomId = data?.roomId;
+  const spendingId = data?.spendingId;
+  const roomName = data?.roomName ?? "";
+  const type = data?.type;
   const screen = data?.screen;
   const url = data?.url;
+
+  if (roomId) {
+    router.push({
+      pathname: "/room-spending/[roomId]",
+      params: {
+        roomId,
+        name: roomName,
+        scrollToId: spendingId ?? "",
+        openCommentId: type === "COMMENT" ? (spendingId ?? "") : "",
+      },
+    });
+    return;
+  }
   if (screen) {
     router.push(screen as any);
-  } else if (url && url !== "/") {
+    return;
+  }
+  if (url && url !== "/") {
     Linking.openURL(url).catch(() => {});
   }
 }
@@ -34,6 +53,7 @@ export function usePushTokenRegister() {
     let unsubRefresh: (() => void) | undefined;
     let unsubOpen: (() => void) | undefined;
     let unsubMessage: (() => void) | undefined;
+    let retryTimeout: ReturnType<typeof setTimeout> | undefined;
 
     const init = (retryCount = 0) => {
       try {
@@ -55,19 +75,12 @@ export function usePushTokenRegister() {
           }
         });
 
-        unsubMessage = messaging().onMessage(async (remoteMessage) => {
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: remoteMessage.notification?.title ?? "새 알림",
-              body: remoteMessage.notification?.body ?? "",
-              data: remoteMessage.data ?? {},
-            },
-            trigger: null,
-          });
+        unsubMessage = messaging().onMessage(async (_remoteMessage) => {
+          console.log('[FCM] onMessage called (foreground) - Firebase handles display natively');
         });
       } catch (e) {
         if (retryCount < 3) {
-          setTimeout(() => init(retryCount + 1), 1000 * (retryCount + 1));
+          retryTimeout = setTimeout(() => init(retryCount + 1), 1000 * (retryCount + 1));
         } else {
           console.warn("[FCM] Firebase 초기화 실패", e);
         }
@@ -88,6 +101,7 @@ export function usePushTokenRegister() {
     });
 
     return () => {
+      clearTimeout(retryTimeout);
       unsubRefresh?.();
       unsubOpen?.();
       unsubMessage?.();

@@ -38,6 +38,15 @@ public class SpendingNotificationSent {
     @Column
     private String memo;
 
+    @Column
+    private Long spendingId;
+
+    @Column
+    private Long roomId;
+
+    @Column
+    private String roomName;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OutboxStatus status;
@@ -69,7 +78,8 @@ public class SpendingNotificationSent {
     }
 
     public static SpendingNotificationSent of(Long outboxId, Long senderId, Long receiverId,
-                                               long amount, String categoryName, String memo) {
+                                               long amount, String categoryName, String memo,
+                                               Long spendingId, Long roomId, String roomName) {
         SpendingNotificationSent sent = new SpendingNotificationSent();
         sent.outboxId = outboxId;
         sent.senderId = senderId;
@@ -77,6 +87,9 @@ public class SpendingNotificationSent {
         sent.amount = amount;
         sent.categoryName = categoryName;
         sent.memo = memo;
+        sent.spendingId = spendingId;
+        sent.roomId = roomId;
+        sent.roomName = roomName;
         return sent;
     }
 }

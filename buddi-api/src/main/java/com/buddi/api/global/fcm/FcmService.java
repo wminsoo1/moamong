@@ -11,19 +11,26 @@ import org.springframework.stereotype.Service;
 @Service
 public class FcmService {
 
-    public void sendSpendingNotification(String token, String senderNickname, long amount, String categoryName, String memo) {
+    public void sendSpendingNotification(String token, String senderNickname, long amount, String categoryName, String memo, Long spendingId, Long roomId, String roomName) {
         String title = (categoryName != null && !categoryName.isBlank()) ? categoryName.trim() : "지출 공유";
         String body = senderNickname + "님 · " + String.format("%,d", amount) + "원"
                 + ((memo != null && !memo.isBlank()) ? " · " + memo.trim() : "");
 
-        Message message = Message.builder()
+        Message.Builder builder = Message.builder()
                 .setToken(token)
                 .setNotification(Notification.builder()
                         .setTitle(title)
                         .setBody(body)
-                        .build())
-                .putData("screen", "/(tabs)/room")
-                .build();
+                        .build());
+        if (roomId != null && spendingId != null) {
+            builder.putData("type", "SPENDING")
+                   .putData("roomId", String.valueOf(roomId))
+                   .putData("spendingId", String.valueOf(spendingId))
+                   .putData("roomName", roomName != null ? roomName : "");
+        } else {
+            builder.putData("screen", "/(tabs)/room");
+        }
+        Message message = builder.build();
         try {
             String messageId = FirebaseMessaging.getInstance().send(message);
             log.info("FCM 전송 성공 (messageId: {})", messageId);
@@ -33,19 +40,26 @@ public class FcmService {
         }
     }
 
-    public void sendCommentNotification(String token, String actorUsername, String commentType, String commentContent) {
+    public void sendCommentNotification(String token, String actorUsername, String commentType, String commentContent, Long spendingId, Long roomId, String roomName) {
         String title = actorUsername + "님이 댓글을 달았어요";
         String body = "VOICE".equals(commentType) ? "음성 댓글"
                 : (commentContent != null && !commentContent.isBlank()) ? commentContent.trim() : "댓글";
 
-        Message message = Message.builder()
+        Message.Builder builder = Message.builder()
                 .setToken(token)
                 .setNotification(Notification.builder()
                         .setTitle(title)
                         .setBody(body)
-                        .build())
-                .putData("screen", "/(tabs)/room")
-                .build();
+                        .build());
+        if (roomId != null && spendingId != null) {
+            builder.putData("type", "COMMENT")
+                   .putData("roomId", String.valueOf(roomId))
+                   .putData("spendingId", String.valueOf(spendingId))
+                   .putData("roomName", roomName != null ? roomName : "");
+        } else {
+            builder.putData("screen", "/(tabs)/room");
+        }
+        Message message = builder.build();
         try {
             String messageId = FirebaseMessaging.getInstance().send(message);
             log.info("FCM 댓글 알림 전송 성공 (messageId: {})", messageId);

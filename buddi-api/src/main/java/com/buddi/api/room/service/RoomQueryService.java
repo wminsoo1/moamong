@@ -90,4 +90,19 @@ public class RoomQueryService {
     public boolean existsSharedRoom(Long userId1, Long userId2) {
         return roomRepository.existsSharedRoom(userId1, userId2);
     }
+
+    @Transactional(readOnly = true)
+    public String getRoomName(Long roomId) {
+        return roomRepository.findById(roomId).map(Room::getName).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public Long getFirstSharedNonSystemRoomId(Long userId1, Long userId2) {
+        return roomRepository.findByUserId(userId1).stream()
+                .filter(r -> !r.isSystem())
+                .filter(r -> r.hasMember(userId2))
+                .map(Room::getId)
+                .findFirst()
+                .orElse(null);
+    }
 }

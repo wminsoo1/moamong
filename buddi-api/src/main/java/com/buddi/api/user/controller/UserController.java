@@ -8,6 +8,7 @@ import com.buddi.api.user.dto.CategoryGroupStyleRequest;
 import com.buddi.api.user.dto.CategoryRequest;
 import com.buddi.api.user.dto.CategoryResponse;
 import com.buddi.api.user.dto.CategoryUpdateRequest;
+import com.buddi.api.user.dto.UserCardResponse;
 import com.buddi.api.user.dto.UsernameRequest;
 import com.buddi.api.user.dto.UserResponse;
 import com.buddi.api.user.dto.UserUpdateRequest;
@@ -32,6 +33,28 @@ public class UserController {
     private final UserQueryService userQueryService;
     private final UserCommandService userCommandService;
     private final RoomQueryService roomQueryService;
+
+    @GetMapping("/me/cards")
+    public ResponseEntity<List<UserCardResponse>> getUserCards(Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(userQueryService.getUserCards(principal.getUserId()));
+    }
+
+    @PostMapping("/me/cards")
+    public ResponseEntity<Void> addCard(@RequestBody Map<String, Long> body,
+                                        Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        userCommandService.addCard(principal.getUserId(), body.get("cardId"));
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/me/cards/{cardId}")
+    public ResponseEntity<Void> removeCard(@PathVariable Long cardId,
+                                           Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        userCommandService.removeCard(principal.getUserId(), cardId);
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/me/category-groups")
     public ResponseEntity<List<CategoryGroupResponse>> getCategoryGroups(Authentication authentication) {

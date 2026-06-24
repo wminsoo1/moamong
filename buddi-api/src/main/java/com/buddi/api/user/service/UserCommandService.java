@@ -1,5 +1,7 @@
 package com.buddi.api.user.service;
 
+import com.buddi.api.card.entity.Card;
+import com.buddi.api.card.repository.CardRepository;
 import com.buddi.api.room.entity.Room;
 import com.buddi.api.room.repository.RoomRepository;
 import com.buddi.api.shareditem.repository.SharedItemRepository;
@@ -25,11 +27,32 @@ import java.util.List;
 public class UserCommandService {
 
     private final UserRepository userRepository;
+    private final CardRepository cardRepository;
     private final SpendingRepository spendingRepository;
     private final RecurringSpendingRepository recurringSpendingRepository;
     private final SharedItemRepository sharedItemRepository;
     private final RoomRepository roomRepository;
     private final SpendingCacheService spendingCacheService;
+
+    @Transactional
+    public void addCard(Long userId, Long cardId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "카드를 찾을 수 없습니다"));
+        try {
+            user.addCard(card);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void removeCard(Long userId, Long cardId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        user.removeCard(cardId);
+    }
 
     @Transactional
     public void saveFcmToken(Long userId, String token) {

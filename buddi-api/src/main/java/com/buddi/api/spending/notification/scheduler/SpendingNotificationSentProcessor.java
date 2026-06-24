@@ -46,7 +46,7 @@ public class SpendingNotificationSentProcessor {
             sent.markProcessed();
             return;
         }
-        fcmService.sendSpendingNotification(token, sender.getUsername(), sent.getAmount(), sent.getCategoryName(), sent.getMemo());
+        fcmService.sendSpendingNotification(token, sender.getUsername(), sent.getAmount(), sent.getCategoryName(), sent.getMemo(), sent.getSpendingId(), sent.getRoomId(), sent.getRoomName());
         sent.markProcessed();
     }
 }

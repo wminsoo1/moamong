@@ -3,6 +3,7 @@ package com.buddi.api.user.service;
 import com.buddi.api.spending.entity.SpendingType;
 import com.buddi.api.user.dto.CategoryGroupResponse;
 import com.buddi.api.user.dto.CategoryResponse;
+import com.buddi.api.user.dto.UserCardResponse;
 import com.buddi.api.user.entity.User;
 import com.buddi.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -75,5 +76,12 @@ public class UserQueryService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return user.getHiddenCategoryGroups();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserCardResponse> getUserCards(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return user.getUserCards().stream().map(UserCardResponse::new).toList();
     }
 }
