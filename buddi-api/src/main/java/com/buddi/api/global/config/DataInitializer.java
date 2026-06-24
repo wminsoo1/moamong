@@ -1,5 +1,8 @@
 package com.buddi.api.global.config;
 
+import com.buddi.api.card.entity.*;
+import com.buddi.api.card.repository.CardRepository;
+import com.buddi.api.card.repository.SearchAliasRepository;
 import com.buddi.api.room.entity.Room;
 import com.buddi.api.room.entity.RoomMemberRole;
 import com.buddi.api.room.repository.RoomRepository;
@@ -38,6 +41,8 @@ public class DataInitializer implements CommandLineRunner {
     private final RecurringSpendingRepository recurringSpendingRepository;
     private final RoomRepository roomRepository;
     private final SharedItemRepository sharedItemRepository;
+    private final CardRepository cardRepository;
+    private final SearchAliasRepository searchAliasRepository;
 
     @Override
     @Transactional
@@ -52,6 +57,8 @@ public class DataInitializer implements CommandLineRunner {
         initSpendingInteractions();
         initHealthChallengeInteractions();
         initBulkData();
+        initCards();
+        initSearchAliases();
     }
 
     private void initSystemRoom() {
@@ -579,6 +586,156 @@ public class DataInitializer implements CommandLineRunner {
                 buildSpending(user, SpendingType.INCOME,  "EMPLOYMENT","성과급",   250000L, LocalDate.of(2026, 6, 11), "필라테스 특강 강사",     18,  0)
             ));
         });
+    }
+
+    private void initCards() {
+        if (cardRepository.count() > 0) return;
+
+        // 1. 신한카드 Mr.Life
+        Card mrLife = Card.of("신한카드 Mr.Life", "신한카드", 15000, 18000, 300000, null, null);
+        BenefitGroup mrLifeBasic = mrLife.addBenefitGroup(BenefitGroupType.FIXED, "기본", 1);
+        mrLifeBasic.addBenefit("공과금", "[\"전기요금\",\"도시가스\",\"SKT\",\"KT\",\"LG U+\"]", DiscountType.PERCENT, 10.0, null, 5000, 50000, null, 1, null, null, "{\"monthly_limit_by_tier\":{\"300000\":3000,\"500000\":7000,\"1000000\":10000},\"exclude\":[\"알뜰폰\"]}");
+        mrLifeBasic.addBenefit("편의점", null, DiscountType.PERCENT, 10.0, null, 1000, 10000, 5, 1, null, null, "{\"monthly_limit_by_tier\":{\"300000\":10000,\"500000\":20000,\"1000000\":30000}}");
+        mrLifeBasic.addBenefit("병원/약국", null, DiscountType.PERCENT, 10.0, null, 1000, 10000, 5, 1, null, null, "{\"monthly_limit_by_tier\":{\"300000\":10000,\"500000\":20000,\"1000000\":30000},\"exclude\":[\"동물병원\"]}");
+        mrLifeBasic.addBenefit("세탁소", null, DiscountType.PERCENT, 10.0, null, 1000, 10000, 5, 1, null, null, "{\"monthly_limit_by_tier\":{\"300000\":10000,\"500000\":20000,\"1000000\":30000}}");
+        mrLifeBasic.addBenefit("온라인쇼핑", "[\"옥션\",\"G마켓\",\"AK몰\",\"11번가\",\"위메프\",\"쿠팡\"]", DiscountType.PERCENT, 10.0, null, 1000, 10000, 10, 1, "NIGHT(21-09)", null, "{\"monthly_limit_by_tier\":{\"300000\":10000,\"500000\":20000,\"1000000\":30000}}");
+        mrLifeBasic.addBenefit("택시", null, DiscountType.PERCENT, 10.0, null, 1000, 10000, 10, 1, "NIGHT(21-09)", null, "{\"monthly_limit_by_tier\":{\"300000\":10000,\"500000\":20000,\"1000000\":30000}}");
+        mrLifeBasic.addBenefit("음식점/카페", null, DiscountType.PERCENT, 10.0, null, 1000, 10000, 10, 1, "NIGHT(21-09)", null, "{\"monthly_limit_by_tier\":{\"300000\":10000,\"500000\":20000,\"1000000\":30000},\"include\":[\"한식\",\"양식\",\"일식\",\"중식\",\"뷔페\",\"일반대중음식점\",\"패스트푸드\",\"커피전문점\"]}");
+        mrLifeBasic.addBenefit("대형마트", "[\"이마트\",\"홈플러스\",\"롯데마트\"]", DiscountType.PERCENT, 10.0, null, 5000, null, null, 1, "WEEKEND", null, "{\"monthly_limit_by_tier\":{\"300000\":3000,\"500000\":7000,\"1000000\":10000},\"exclude\":[\"상품권\"]}");
+        mrLifeBasic.addBenefit("주유소", "[\"SK에너지\",\"GS칼텍스\",\"HD현대오일뱅크\",\"에스오일\"]", DiscountType.WON_PER_LITER, 60.0, null, null, 300000, null, 1, "WEEKEND", null, "{\"monthly_limit_by_tier\":{\"300000\":3000,\"500000\":7000,\"1000000\":10000},\"exclude\":[\"LPG\"]}");
+        cardRepository.save(mrLife);
+
+        // 2. 신한카드 Deep Oil
+        Card deepOil = Card.of("신한카드 Deep Oil", "신한카드", 10000, 13000, null, null, null);
+        BenefitGroup deepOilBasic = deepOil.addBenefitGroup(BenefitGroupType.FIXED, "기본", 1);
+        deepOilBasic.addBenefit("주유소", "[\"SK에너지\",\"GS칼텍스\",\"HD현대오일뱅크\",\"에스오일\"]", DiscountType.PERCENT, 10.0, null, null, null, null, null, null, null, "{\"note\":\"무실적, 전 브랜드 적용\"}");
+        deepOilBasic.addBenefit("자동차정비", "[\"스피드메이트\"]", DiscountType.PERCENT, 10.0, null, null, null, null, null, null, null, null);
+        deepOilBasic.addBenefit("주차장", null, DiscountType.PERCENT, 10.0, null, null, null, null, null, null, null, "{\"note\":\"신한카드 가맹점 업종 기준 주차장에 한함\"}");
+        deepOilBasic.addBenefit("편의점", null, DiscountType.PERCENT, 5.0, null, null, null, null, null, null, null, null);
+        deepOilBasic.addBenefit("카페", null, DiscountType.PERCENT, 5.0, null, null, null, null, null, null, null, null);
+        deepOilBasic.addBenefit("택시", null, DiscountType.PERCENT, 5.0, null, null, null, null, null, null, null, null);
+        deepOilBasic.addBenefit("영화관", "[\"CGV\",\"롯데시네마\",\"메가박스\"]", DiscountType.WON, 5000.0, null, 5000, null, null, null, null, null, null);
+        cardRepository.save(deepOil);
+
+        // 3. 신한카드 Discount Plan+
+        Card discountPlan = Card.of("신한카드 Discount Plan+", "신한카드", 50000, 50000, 300000, PrevMonthExcludeType.DISCOUNT_AMOUNT_ONLY, null);
+        BenefitGroup daily = discountPlan.addBenefitGroup(BenefitGroupType.FIXED, "Daily Plan", 1);
+        daily.addBenefit("음식점", null, DiscountType.PERCENT, 10.0, null, 2000, 30000, null, 1, null, null, "{\"monthly_limit_by_tier\":{\"300000\":10000,\"500000\":20000,\"1000000\":40000}}");
+        daily.addBenefit("카페", null, DiscountType.PERCENT, 10.0, null, 2000, null, null, 1, null, null, "{\"monthly_limit_by_tier\":{\"300000\":10000,\"500000\":20000,\"1000000\":40000}}");
+        daily.addBenefit("편의점", null, DiscountType.PERCENT, 10.0, null, 2000, null, null, 1, null, null, "{\"monthly_limit_by_tier\":{\"300000\":10000,\"500000\":20000,\"1000000\":40000}}");
+        daily.addBenefit("대형마트", "[\"이마트\",\"롯데마트\"]", DiscountType.PERCENT, 10.0, null, 2000, null, null, 1, null, null, "{\"note\":\"홈플러스 제외(법인회생)\",\"monthly_limit_by_tier\":{\"300000\":10000,\"500000\":20000,\"1000000\":40000}}");
+        daily.addBenefit("주유소", "[\"SK에너지\",\"GS칼텍스\",\"HD현대오일뱅크\",\"에스오일\"]", DiscountType.PERCENT, 5.0, null, 2000, null, null, 1, null, null, "{\"monthly_limit_by_tier\":{\"300000\":10000,\"500000\":20000,\"1000000\":40000}}");
+        BenefitGroup monthly = discountPlan.addBenefitGroup(BenefitGroupType.FIXED, "Monthly Plan", 1);
+        monthly.addBenefit("공과금", "[\"전기요금\",\"도시가스\",\"SKT\",\"KT\",\"LG U+\"]", DiscountType.PERCENT, 20.0, null, null, null, null, 1, null, null, "{\"note\":\"정기결제 건, 월 1회\"}");
+        monthly.addBenefit("OTT", "[\"넷플릭스\",\"유튜브프리미엄\",\"왓챠\",\"티빙\",\"웨이브\",\"쿠팡플레이\",\"디즈니플러스\"]", DiscountType.PERCENT, 20.0, null, null, null, null, 1, null, null, "{\"note\":\"정기결제 건, 월 1회\"}");
+        monthly.addBenefit("스피드메이트", "[\"스피드메이트\"]", DiscountType.PERCENT, 20.0, null, null, null, 1, null, null, null, "{\"note\":\"연 3회, 오프라인 현장 할인\"}");
+        cardRepository.save(discountPlan);
+
+        // 4. KB국민 My WE:SH
+        Card myWesh = Card.of("KB국민 My WE:SH", "KB국민카드", 15000, 15000, 400000, PrevMonthExcludeType.FULL_DISCOUNTED_TXN, null);
+        BenefitGroup sincerely = myWesh.addBenefitGroup(BenefitGroupType.FIXED, "나한테 진심", 1);
+        sincerely.addBenefit("KB Pay", null, DiscountType.PERCENT, 10.0, 5000, 2500, null, null, null, null, null, "{\"note\":\"국내 가맹점 KB Pay 결제에 한함\"}");
+        sincerely.addBenefit("음식점/편의점", "[\"GS25\",\"CU\"]", DiscountType.PERCENT, 10.0, 5000, 2500, null, null, null, null, null, null);
+        sincerely.addBenefit("통신요금", null, DiscountType.PERCENT, 10.0, 5000, 2500, null, null, null, null, null, null);
+        sincerely.addBenefit("OTT", null, DiscountType.PERCENT, 30.0, 5000, 2500, null, null, null, null, null, "{\"note\":\"정기결제 건에 한함\"}");
+        BenefitGroup moreSincerely = myWesh.addBenefitGroup(BenefitGroupType.SELECT, "더욱 진심", 1);
+        moreSincerely.addBenefit("배달앱/카페", "[\"배달의민족\",\"요기요\",\"마켓컬리\"]", DiscountType.PERCENT, 5.0, 5000, null, null, null, null, null, null, "{\"select_label\":\"먹는데 진심\",\"exclude\":[\"쿠팡이츠\"]}");
+        moreSincerely.addBenefit("택시/카페", null, DiscountType.PERCENT, 5.0, 5000, null, null, null, null, null, null, "{\"select_label\":\"노는데 진심\"}");
+        moreSincerely.addBenefit("영화관", "[\"CGV\",\"롯데시네마\",\"메가박스\"]", DiscountType.PERCENT, 30.0, 5000, null, null, 4, null, null, null, "{\"select_label\":\"노는데 진심\",\"annual_limit\":20000}");
+        moreSincerely.addBenefit("미용/스포츠/올리브영", "[\"올리브영\",\"교보문고\",\"YES24\"]", DiscountType.PERCENT, 5.0, 10000, null, null, null, null, null, null, "{\"select_label\":\"관리에 진심\",\"include\":[\"미용실\",\"스포츠센터\",\"골프장\",\"수영장\",\"요가\",\"볼링장\"]}");
+        cardRepository.save(myWesh);
+
+        // 5. KB국민 쿠팡 와우카드
+        Card coupangWow = Card.of("KB국민 쿠팡 와우카드", "KB국민카드", 5000, null, null, null, null);
+        BenefitGroup coupangBasic = coupangWow.addBenefitGroup(BenefitGroupType.FIXED, "기본", 1);
+        coupangBasic.addBenefit("쿠팡", "[\"쿠팡\"]", DiscountType.PERCENT, 5.0, 10000, null, null, null, null, null, null, "{\"note\":\"쿠팡 앱/웹 결제, 로켓배송·로켓프레시 포함\"}");
+        coupangBasic.addBenefit("쿠팡이츠", "[\"쿠팡이츠\"]", DiscountType.PERCENT, 5.0, 5000, null, null, null, null, null, null, null);
+        coupangBasic.addBenefit("쿠팡플레이", "[\"쿠팡플레이\"]", DiscountType.PERCENT, 5.0, 3000, null, null, null, null, null, null, null);
+        cardRepository.save(coupangWow);
+
+        // 6. 삼성카드 taptap O
+        Card taptap = Card.of("삼성카드 taptap O", "삼성카드", 10000, 10000, 300000, PrevMonthExcludeType.FULL_DISCOUNTED_TXN, null);
+        BenefitGroup taptapBasic = taptap.addBenefitGroup(BenefitGroupType.FIXED, "기본", 1);
+        taptapBasic.addBenefit("대중교통", null, DiscountType.PERCENT, 10.0, 5000, null, null, null, null, null, null, "{\"note\":\"버스·지하철·택시 통합 한도 5,000원\"}");
+        taptapBasic.addBenefit("통신요금", "[\"SKT\",\"KT\",\"LG U+\"]", DiscountType.PERCENT, 10.0, 5000, null, null, null, null, null, null, "{\"auto_debit_only\":true,\"note\":\"통신3사 자동납부 연결 시\"}");
+        taptapBasic.addBenefit("영화관", "[\"CGV\",\"롯데시네마\"]", DiscountType.WON, 5000.0, null, 5000, 10000, 2, 1, null, null, "{\"annual_count\":12,\"note\":\"1만원 이상 결제\"}");
+        BenefitGroup lifestyle = taptap.addBenefitGroup(BenefitGroupType.SELECT, "라이프스타일 패키지", 1);
+        lifestyle.addBenefit("카페", "[\"스타벅스\"]", DiscountType.PERCENT, 50.0, 10000, null, null, null, null, null, null, "{\"select_label\":\"패키지1~3(스타벅스50%)\"}");
+        lifestyle.addBenefit("온라인쇼핑", "[\"옥션\",\"G마켓\"]", DiscountType.PERCENT, 7.0, null, null, null, null, null, null, null, "{\"select_label\":\"패키지1(오픈마켓7%)\"}");
+        lifestyle.addBenefit("온라인쇼핑", "[\"쿠팡\"]", DiscountType.PERCENT, 7.0, null, null, null, null, null, null, null, "{\"select_label\":\"패키지2(소셜커머스7%)\"}");
+        lifestyle.addBenefit("온라인쇼핑", "[\"무신사\",\"W컨셉\",\"지그재그\"]", DiscountType.PERCENT, 7.0, null, null, null, null, null, null, null, "{\"select_label\":\"패키지3(트렌디숍7%)\"}");
+        lifestyle.addBenefit("카페", null, DiscountType.PERCENT, 30.0, 5000, null, null, null, null, null, null, "{\"select_label\":\"패키지4~6(커피전문점30%)\"}");
+        cardRepository.save(taptap);
+
+        // 7. 우리카드 카드의정석2
+        Card woori2 = Card.of("우리카드 카드의정석2", "우리카드", 12000, null, 500000, null, null);
+        BenefitGroup woori2Basic = woori2.addBenefitGroup(BenefitGroupType.FIXED, "기본", 1);
+        woori2Basic.addBenefit("전 가맹점", null, DiscountType.PERCENT, 1.2, null, null, null, null, null, null, null, "{\"note\":\"국내외 전 가맹점, 무이자할부·세금·상품권 제외\",\"quarterly_bonus\":\"분기 이용실적에 따라 최대 15,000원 추가 할인\"}");
+        cardRepository.save(woori2);
+
+        // 8. 우리카드 카드의정석 POINT
+        Card wooriPoint = Card.of("우리카드 카드의정석 POINT", "우리카드", 12000, null, null, null, null);
+        BenefitGroup wooriPointBasic = wooriPoint.addBenefitGroup(BenefitGroupType.FIXED, "기본", 1);
+        wooriPointBasic.addBenefit("전 가맹점", null, DiscountType.POINT, 0.8, null, null, null, null, null, null, null, "{\"note\":\"무실적, 전 가맹점 0.8% 포인트 적립\"}");
+        wooriPointBasic.addBenefit("온라인간편결제", "[\"카카오페이\",\"네이버페이\",\"우리WON페이\"]", DiscountType.POINT, 2.0, null, null, null, null, null, null, 400000, "{\"note\":\"전월실적 40만원 이상 시 추가 적립\"}");
+        cardRepository.save(wooriPoint);
+    }
+
+    private void initSearchAliases() {
+        if (searchAliasRepository.count() > 0) return;
+        searchAliasRepository.saveAll(List.of(
+            SearchAlias.of("넷플릭스", "OTT", "넷플릭스"),
+            SearchAlias.of("왓챠", "OTT", "왓챠"),
+            SearchAlias.of("웨이브", "OTT", "웨이브"),
+            SearchAlias.of("유튜브", "OTT", "유튜브프리미엄"),
+            SearchAlias.of("티빙", "OTT", "티빙"),
+            SearchAlias.of("버스", "대중교통", null),
+            SearchAlias.of("지하철", "대중교통", null),
+            SearchAlias.of("롯데마트", "대형마트", "롯데마트"),
+            SearchAlias.of("이마트", "대형마트", "이마트"),
+            SearchAlias.of("코스트코", "대형마트", "코스트코"),
+            SearchAlias.of("홈플러스", "대형마트", "홈플러스"),
+            SearchAlias.of("올리브영", "미용/드럭스토어", "올리브영"),
+            SearchAlias.of("올영", "미용/드럭스토어", "올리브영"),
+            SearchAlias.of("머리", "미용실", null),
+            SearchAlias.of("미용실", "미용실", null),
+            SearchAlias.of("배민", "배달앱", "배달의민족"),
+            SearchAlias.of("요기요", "배달앱", "요기요"),
+            SearchAlias.of("쿠이", "배달앱", "쿠팡이츠"),
+            SearchAlias.of("PT", "스포츠센터", null),
+            SearchAlias.of("수영", "스포츠센터", null),
+            SearchAlias.of("필라테스", "스포츠센터", null),
+            SearchAlias.of("헬스", "스포츠센터", null),
+            SearchAlias.of("CGV", "영화관", "CGV"),
+            SearchAlias.of("롯시", "영화관", "롯데시네마"),
+            SearchAlias.of("메박", "영화관", "메가박스"),
+            SearchAlias.of("교보문고", "온라인서점/도서", "교보문고"),
+            SearchAlias.of("예스24", "온라인서점/도서", "YES24"),
+            SearchAlias.of("11번가", "온라인쇼핑", "11번가"),
+            SearchAlias.of("무신사", "온라인쇼핑", "무신사"),
+            SearchAlias.of("지마켓", "온라인쇼핑", "G마켓"),
+            SearchAlias.of("쿠팡", "온라인쇼핑", "쿠팡"),
+            SearchAlias.of("스피드메이트", "자동차정비", "스피드메이트"),
+            SearchAlias.of("다이소", "잡화", "다이소"),
+            SearchAlias.of("기름", "주유소", null),
+            SearchAlias.of("주유", "주유소", null),
+            SearchAlias.of("메가커피", "카페", "메가MGC커피"),
+            SearchAlias.of("빽다방", "카페", "빽다방"),
+            SearchAlias.of("스벅", "카페", "스타벅스"),
+            SearchAlias.of("이디야", "카페", "이디야"),
+            SearchAlias.of("컴포즈", "카페", "컴포즈커피"),
+            SearchAlias.of("투썸", "카페", "투썸플레이스"),
+            SearchAlias.of("카카오택시", "택시", null),
+            SearchAlias.of("택시", "택시", null),
+            SearchAlias.of("KT", "통신요금", "KT"),
+            SearchAlias.of("LG", "통신요금", "LG U+"),
+            SearchAlias.of("SKT", "통신요금", "SKT"),
+            SearchAlias.of("통신비", "통신요금", null),
+            SearchAlias.of("미니스톱", "편의점", "미니스톱"),
+            SearchAlias.of("세븐", "편의점", "세븐일레븐"),
+            SearchAlias.of("씨유", "편의점", "CU"),
+            SearchAlias.of("지에스", "편의점", "GS25")
+        ));
     }
 
     private Spending buildSpending(User user, SpendingType type, String groupKey, String categoryName, long amount, LocalDate date, String memo, int hour, int minute) {

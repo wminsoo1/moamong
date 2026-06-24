@@ -1143,3 +1143,105 @@ GET /api/stats/category?year={year}&month={month}
 - `categories`: 이번 달 지출(EXPENSE)이 있는 분류만 포함, 금액 내림차순
 - `categoryGroup`: 분류 key (클라이언트에서 색상/아이콘 매핑)
 - `percentage`: 이번 달 총 지출 대비 비율
+
+---
+
+## 카드 혜택 검색
+
+### 검색어 자동완성
+```
+GET /api/cards/search/aliases?keyword={keyword}
+```
+
+검색어 입력 시 매칭되는 가맹점/업종 후보를 반환합니다.
+
+| 파라미터 | 필수 | 설명 |
+|---|---|---|
+| `keyword` | 필수 | 검색어 (예: "올", "스벅", "CGV") |
+
+**Response**
+```json
+[
+  { "keyword": "올리브영", "category": "미용/드럭스토어", "merchant": "올리브영" },
+  { "keyword": "올영", "category": "미용/드럭스토어", "merchant": "올리브영" }
+]
+```
+- `merchant`: 특정 가맹점명. `null`이면 업종 전체
+
+---
+
+### 카드 혜택 검색
+```
+GET /api/cards/search/benefits?category={category}&merchant={merchant}
+```
+
+검색어 자동완성에서 선택한 category/merchant로 혜택을 검색합니다.
+
+| 파라미터 | 필수 | 설명 |
+|---|---|---|
+| `category` | 필수 | 업종 카테고리 (예: "카페", "미용/드럭스토어") |
+| `merchant` | 선택 | 특정 가맹점명 (예: "스타벅스", "올리브영") |
+
+**Response**
+```json
+{
+  "benefits": [
+    {
+      "cardId": 6,
+      "cardName": "삼성카드 taptap O",
+      "company": "삼성카드",
+      "imageUrl": null,
+      "category": "카페",
+      "merchants": "[\"스타벅스\"]",
+      "discountType": "PERCENT",
+      "discountValue": 50.0,
+      "matchType": "DIRECT",
+      "monthlyLimit": 10000,
+      "perTxnLimit": null,
+      "perTxnAmountLimit": null,
+      "timeCondition": null,
+      "conditions": "{\"select_label\":\"패키지1~3(스타벅스50%)\"}",
+      "benefitGroupType": "SELECT",
+      "benefitGroupLabel": "라이프스타일 패키지"
+    }
+  ],
+  "conditionalBenefits": [
+    {
+      "cardId": 6,
+      "cardName": "삼성카드 taptap O",
+      "discountType": "PERCENT",
+      "discountValue": 0.0,
+      "matchType": "CATEGORY",
+      "benefitGroupType": "DYNAMIC",
+      "benefitGroupLabel": "AI 추천"
+    }
+  ],
+  "fallbackBenefits": []
+}
+```
+
+**응답 구조**
+
+| 필드 | 설명 |
+|---|---|
+| `benefits` | 확실한 혜택 목록. `matchType` DIRECT 우선 → `discountValue` 내림차순 |
+| `conditionalBenefits` | 조건부 혜택 (DYNAMIC, GEO_PRICE 타입). 하단 별도 표시 |
+| `fallbackBenefits` | `benefits`와 `conditionalBenefits` 모두 비어있을 때 기본 적립률 높은 카드 |
+
+**matchType**
+
+| 값 | 설명 | UI 배지 |
+|---|---|---|
+| `DIRECT` | 가맹점이 merchants에 직접 명시됨 | `직접 명시 ✓` |
+| `CATEGORY` | 업종 카테고리 매칭 | `업종 매칭` + "가맹점 기준 따라 다를 수 있음" |
+
+**discountType**
+
+| 값 | 설명 | 표시 예시 |
+|---|---|---|
+| `PERCENT` | 퍼센트 할인 | `10%` |
+| `WON` | 정액 할인 | `5,000원` |
+| `WON_PER_LITER` | 리터당 할인 (주유) | `60원/L` |
+| `POINT` | 포인트 적립 | `0.8%` |
+| `MILE_PER_1000WON` | 마일리지 적립 | `1마일/1,000원` |
+| `GEO_PRICE` | 위치기반 최저가 | "위치·유가에 따라 달라짐" |
